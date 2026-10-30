@@ -40,4 +40,18 @@ Detalhes e justificativas nos ADRs 0002 a 0005.
 - **Dinheiro e taxas:** `DecimalField`, nunca `float`.
 - **Dados pessoais (CPF etc.):** sem criptografia de campo por ora (decisão adiada); não logar nem expor CPF sem necessidade.
 - **Qualidade:** pytest-django, factory_boy, ruff (lint + format), pre-commit e GitHub Actions.
-- **Domínio inicial:** app de clientes/beneficiários; depois convênios, propostas e contratos.
+- **Domínio inicial:** consignado INSS para um correspondente bancário (ver `GLOSSARY.md`). Ordem: clientes e benefícios, bancos, propostas, contratos. Convênio fora do escopo por ora.
+
+## Agent skills
+
+### Issue tracker
+
+Issues e specs ficam como markdown local em `.scratch/<feature>/`. Ver `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Vocabulário padrão (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). Ver `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` na raiz + `docs/adr/`. Ver `docs/agents/domain.md`.
