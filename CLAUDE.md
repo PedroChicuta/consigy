@@ -22,3 +22,22 @@ Projeto Django 6.1 (Python 3.14) para o domínio de crédito consignado. O pacot
 
 - Código e comentários em português quando houver texto de domínio; mantenha o estilo do `settings.py` (aspas simples).
 - Novos apps: `python manage.py startapp <nome>` e registrar em `INSTALLED_APPS`.
+
+## ADRs
+
+- Decisões arquiteturais ficam em `docs/adr/NNNN-titulo.md` (Nygard, em português; modelo em `0000-modelo.md`).
+- Ao surgir uma decisão arquitetural, rascunhe o ADR como "Proposto" e só marque "Aceito" após confirmação do usuário. ADR aceito não se reescreve: crie um novo que o substitua.
+
+## Arquitetura (decisões; ainda não implementadas)
+
+Detalhes e justificativas nos ADRs 0002 a 0005.
+
+- **Interface:** Django templates (SSR) com HTMX e Bootstrap. Sem API REST/SPA por ora. O público são só operadores de backoffice (sem multi-tenancy).
+- **Camadas por app:** `models.py` (dados e invariantes simples), `services.py` (escrita e regras de negócio), `selectors.py` (leitura/consultas), `views.py` finas, que só chamam services/selectors. Não colocar regra de negócio em views, forms ou signals.
+- **Assíncrono:** Celery + Redis (broker e beat). Tasks finas, que delegam para services.
+- **Autenticação:** app `accounts` com `AbstractUser` customizado e `AUTH_USER_MODEL` definido antes da primeira migration. Permissões via grupos/permissões nativos do Django.
+- **Auditoria:** `django-simple-history` (`HistoricalRecords`) nos modelos críticos.
+- **Dinheiro e taxas:** `DecimalField`, nunca `float`.
+- **Dados pessoais (CPF etc.):** sem criptografia de campo por ora (decisão adiada); não logar nem expor CPF sem necessidade.
+- **Qualidade:** pytest-django, factory_boy, ruff (lint + format), pre-commit e GitHub Actions.
+- **Domínio inicial:** app de clientes/beneficiários; depois convênios, propostas e contratos.
