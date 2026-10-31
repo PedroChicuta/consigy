@@ -46,7 +46,7 @@ Detalhes e justificativas nos ADRs 0002 a 0005.
 
 ### Issue tracker
 
-Issues e specs ficam como markdown local em `.scratch/<feature>/`. Ver `docs/agents/issue-tracker.md`.
+Issues e specs ficam no GitHub Issues (CLI `gh`). Ver `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
