@@ -5,7 +5,7 @@
   <tbody>
     {% for contrato in contratos %}
       <tr>
-        <td>{{ contrato.pk }}</td>
+        <td><a href="{% url 'contratos:detalhe' contrato.pk %}">{{ contrato.pk }}</a></td>
         <td><a href="{% url 'propostas:detalhe' contrato.proposta_id %}">{{ contrato.proposta_id }}</a></td>
         <td>{{ contrato.proposta.banco.nome }}</td>
         <td>R$ {{ contrato.valor }}</td>

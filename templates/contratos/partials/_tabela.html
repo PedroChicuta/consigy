@@ -1,0 +1,20 @@
+<div id="tabela-contratos">
+  {% include 'contratos/partials/_linhas.html' with contratos=pagina %}
+  {% if pagina.has_other_pages %}
+    <nav class="d-flex gap-2 align-items-center">
+      {% if pagina.has_previous %}
+        <a class="btn btn-outline-secondary btn-sm"
+           href="?cliente={{ cliente|urlencode }}&status={{ status }}&page={{ pagina.previous_page_number }}"
+           hx-get="{% url 'contratos:lista' %}?cliente={{ cliente|urlencode }}&status={{ status }}&page={{ pagina.previous_page_number }}"
+           hx-target="#tabela-contratos" hx-swap="outerHTML">Anterior</a>
+      {% endif %}
+      <span class="text-muted">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+      {% if pagina.has_next %}
+        <a class="btn btn-outline-secondary btn-sm"
+           href="?cliente={{ cliente|urlencode }}&status={{ status }}&page={{ pagina.next_page_number }}"
+           hx-get="{% url 'contratos:lista' %}?cliente={{ cliente|urlencode }}&status={{ status }}&page={{ pagina.next_page_number }}"
+           hx-target="#tabela-contratos" hx-swap="outerHTML">Próxima</a>
+      {% endif %}
+    </nav>
+  {% endif %}
+</div>

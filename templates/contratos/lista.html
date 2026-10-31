@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Contratos · Consignado{% endblock %}
+
+{% block conteudo %}
+  <h1 class="h3 mb-3">Contratos</h1>
+  <form class="row g-2 mb-3" role="search" action="{% url 'contratos:lista' %}" method="get"
+        hx-get="{% url 'contratos:lista' %}" hx-trigger="input changed delay:300ms, change"
+        hx-target="#tabela-contratos" hx-swap="outerHTML">
+    <div class="col-md-6">
+      <input type="search" name="cliente" value="{{ cliente }}" class="form-control" autocomplete="off"
+             placeholder="Cliente (nome ou CPF)">
+    </div>
+    <div class="col-md-6">
+      <select name="status" class="form-select">
+        <option value="">Todos os status</option>
+        {% for valor, rotulo in status_opcoes %}
+          <option value="{{ valor }}" {% if valor == status %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+  {% include 'contratos/partials/_tabela.html' %}
+{% endblock %}
