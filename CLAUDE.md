@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Projeto Django 6.1 (Python 3.14) para o domínio de crédito consignado. O código da aplicação fica em `src/` (source root, sem prefixo nos imports): configuração em `src/core/`, apps (`accounts`, `inicio`, `clientes`, `beneficios`, `bancos`, `propostas`, `contratos`), `src/templates/` e `src/manage.py`. Na raiz ficam infra, docs, `.env`, `db.sqlite3` e `staticfiles/` (ver ADR 0007).
+Projeto Django 6.1 (Python 3.14) para o domínio de crédito consignado. O código da aplicação fica em `src/` (source root, sem prefixo nos imports): configuração em `src/core/`, apps (`accounts`, `inicio`, `clientes`, `beneficios`, `bancos`, `propostas`, `contratos`) e `src/manage.py`. Templates ficam em `<app>/templates/<app>/`; os compartilhados (`base.html`, `403.html`) em `src/core/templates/`. Na raiz ficam infra, docs, `.env`, `db.sqlite3` e `staticfiles/` (ver ADR 0007).
 
 ## Comandos
 

@@ -12,7 +12,8 @@ Apps, `core/`, `templates/` e `manage.py` ficavam na raiz, misturados com Docker
 
 ## Decisão
 
-- Todo o código Python e HTML da aplicação fica em `src/`: `core/`, os apps, `templates/` e `manage.py`.
+- Todo o código Python e HTML da aplicação fica em `src/`: `core/`, os apps e `manage.py`.
+- Templates ficam dentro de cada app, em `<app>/templates/<app>/` (achados por `APP_DIRS`; os nomes lógicos, como `clientes/form.html`, não mudam). Os compartilhados (`base.html`, `403.html`) ficam em `core/templates/`, registrado em `TEMPLATES['DIRS']`; `core` segue como pacote de configuração, fora de `INSTALLED_APPS`. Partials de um app podem ser incluídos por outro pelo nome lógico.
 - `src/` é o source root (diretório de trabalho e `pythonpath`); os imports continuam sem prefixo (`clientes.services`, `core.settings`), então `INSTALLED_APPS` e migrations não mudam.
 - `BASE_DIR` é `src/`; `ROOT_DIR` é a raiz do repositório e abriga `.env`, `db.sqlite3` e `staticfiles/`.
 - Docker usa `WORKDIR`/`working_dir` `/app/src`. `requirements.txt`, `docs/`, `scripts/` e `pyproject.toml` ficam na raiz.
