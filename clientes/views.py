@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 
@@ -9,12 +10,20 @@ from clientes.forms import ClienteForm, NovoClienteForm
 from clientes.models import Cliente
 from core.exceptions import ErroDeNegocio
 
+POR_PAGINA = 25
+
 
 class ListaView(PermissaoNecessariaMixin, View):
     permission_required = 'clientes.view_cliente'
 
     def get(self, request):
-        return render(request, 'clientes/lista.html', {'clientes': selectors.listar_clientes()})
+        busca = request.GET.get('q', '').strip()
+        paginas = Paginator(selectors.listar_clientes(busca=busca), POR_PAGINA)
+        pagina = paginas.get_page(request.GET.get('page'))
+        template = 'clientes/lista.html'
+        if request.headers.get('HX-Request'):
+            template = 'clientes/partials/_tabela.html'
+        return render(request, template, {'pagina': pagina, 'busca': busca})
 
 
 class CriarView(PermissaoNecessariaMixin, View):

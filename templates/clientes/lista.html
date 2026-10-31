@@ -9,19 +9,11 @@
       <a class="btn btn-primary" href="{% url 'clientes:criar' %}">Novo Cliente</a>
     {% endif %}
   </div>
-  <table class="table table-hover">
-    <thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>Situação</th></tr></thead>
-    <tbody>
-      {% for cliente in clientes %}
-        <tr>
-          <td><a href="{% url 'clientes:detalhe' cliente.pk %}">{{ cliente.nome }}</a></td>
-          <td>{{ cliente.cpf_mascarado }}</td>
-          <td>{{ cliente.telefone }}</td>
-          <td>{% if cliente.ativo %}Ativo{% else %}<span class="text-muted">Inativo</span>{% endif %}</td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="4" class="text-muted">Nenhum Cliente cadastrado.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <form class="mb-3" role="search" action="{% url 'clientes:lista' %}" method="get">
+    <input type="search" name="q" value="{{ busca }}" class="form-control" autocomplete="off"
+           placeholder="Buscar por CPF ou nome"
+           hx-get="{% url 'clientes:lista' %}" hx-trigger="input changed delay:300ms, search"
+           hx-target="#tabela-clientes" hx-swap="outerHTML">
+  </form>
+  {% include 'clientes/partials/_tabela.html' %}
 {% endblock %}

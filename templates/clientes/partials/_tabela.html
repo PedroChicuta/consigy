@@ -1,0 +1,32 @@
+<div id="tabela-clientes">
+  <table class="table table-hover">
+    <thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>Situação</th></tr></thead>
+    <tbody>
+      {% for cliente in pagina %}
+        <tr>
+          <td><a href="{% url 'clientes:detalhe' cliente.pk %}">{{ cliente.nome }}</a></td>
+          <td>{{ cliente.cpf_mascarado }}</td>
+          <td>{{ cliente.telefone }}</td>
+          <td>{% if cliente.ativo %}Ativo{% else %}<span class="text-muted">Inativo</span>{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="text-muted">{% if busca %}Nenhum Cliente encontrado.{% else %}Nenhum Cliente cadastrado.{% endif %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if pagina.has_other_pages %}
+    <nav class="d-flex gap-2 align-items-center">
+      {% if pagina.has_previous %}
+        <a class="btn btn-outline-secondary btn-sm" href="?q={{ busca|urlencode }}&page={{ pagina.previous_page_number }}"
+           hx-get="{% url 'clientes:lista' %}?q={{ busca|urlencode }}&page={{ pagina.previous_page_number }}"
+           hx-target="#tabela-clientes" hx-swap="outerHTML">Anterior</a>
+      {% endif %}
+      <span class="text-muted">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+      {% if pagina.has_next %}
+        <a class="btn btn-outline-secondary btn-sm" href="?q={{ busca|urlencode }}&page={{ pagina.next_page_number }}"
+           hx-get="{% url 'clientes:lista' %}?q={{ busca|urlencode }}&page={{ pagina.next_page_number }}"
+           hx-target="#tabela-clientes" hx-swap="outerHTML">Próxima</a>
+      {% endif %}
+    </nav>
+  {% endif %}
+</div>

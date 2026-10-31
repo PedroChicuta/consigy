@@ -1,8 +1,28 @@
+from django.db.models import Q
+
+from clientes.cpf import normalizar_cpf
 from clientes.models import Cliente
 
+# Abaixo disso, dígitos soltos casariam CPFs demais para servir de busca.
+MIN_DIGITOS_CPF = 3
 
-def listar_clientes():
-    return Cliente.objects.all()
+
+def listar_clientes(*, busca=''):
+    """Clientes filtrados por parte do nome ou do CPF (com ou sem máscara).
+
+    A busca por número do Benefício entra com o ticket #6.
+    """
+    clientes = Cliente.objects.all()
+    busca = (busca or '').strip()
+    if not busca:
+        return clientes
+    filtro = Q(nome__icontains=busca)
+    # CPF só se a busca parece um CPF (dígitos e pontuação), não um nome com número.
+    if all(c.isdigit() or c in '.-' for c in busca):
+        digitos = normalizar_cpf(busca)
+        if len(digitos) >= MIN_DIGITOS_CPF:
+            filtro |= Q(cpf__contains=digitos)
+    return clientes.filter(filtro)
 
 
 def historico_do_cliente(*, cliente):

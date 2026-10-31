@@ -103,3 +103,35 @@ def test_historico_so_aparece_para_supervisor(client, db):
 
     client.force_login(_usuario('Supervisor'))
     assert 'Histórico de alterações' in client.get(url).content.decode()
+
+
+def test_lista_filtra_pela_busca(client, operador):
+    ClienteFactory(nome='José da Silva')
+    ClienteFactory(nome='Maria Souza')
+
+    conteudo = client.get(reverse('clientes:lista'), {'q': 'silva'}).content.decode()
+
+    assert 'José da Silva' in conteudo
+    assert 'Maria Souza' not in conteudo
+
+
+def test_requisicao_htmx_devolve_so_a_tabela(client, operador):
+    ClienteFactory(nome='José da Silva')
+
+    resposta = client.get(reverse('clientes:lista'), headers={'HX-Request': 'true'})
+
+    conteudo = resposta.content.decode()
+    assert 'José da Silva' in conteudo
+    assert '<html' not in conteudo
+
+
+def test_lista_e_paginada(client, operador):
+    for i in range(30):
+        ClienteFactory(nome=f'Cliente {i:02d}', cpf=f'{i:011d}')
+
+    pagina1 = client.get(reverse('clientes:lista')).content.decode()
+    pagina2 = client.get(reverse('clientes:lista'), {'page': 2}).content.decode()
+
+    assert 'Cliente 00' in pagina1
+    assert 'Cliente 29' not in pagina1
+    assert 'Cliente 29' in pagina2
