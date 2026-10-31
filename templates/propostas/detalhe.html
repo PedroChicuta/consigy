@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Proposta {{ proposta.pk }} · Consignado{% endblock %}
+
+{% block conteudo %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Proposta {{ proposta.pk }}
+      <span class="badge text-bg-secondary">{{ proposta.get_status_display }}</span>
+    </h1>
+    {% if proposta.status == 'digitada' and perms.propostas.change_proposta %}
+      <a class="btn btn-outline-primary" href="{% url 'propostas:editar' proposta.pk %}">Editar</a>
+    {% endif %}
+  </div>
+  <dl class="row">
+    <dt class="col-sm-3">Cliente</dt>
+    <dd class="col-sm-9"><a href="{% url 'clientes:detalhe' proposta.beneficio.cliente.pk %}">{{ proposta.beneficio.cliente.nome }}</a></dd>
+    <dt class="col-sm-3">Benefício</dt>
+    <dd class="col-sm-9"><a href="{% url 'beneficios:detalhe' proposta.beneficio.pk %}">{{ proposta.beneficio.numero }}</a></dd>
+    <dt class="col-sm-3">Banco</dt><dd class="col-sm-9">{{ proposta.banco.nome }}</dd>
+    <dt class="col-sm-3">Valor</dt><dd class="col-sm-9">R$ {{ proposta.valor }}</dd>
+    <dt class="col-sm-3">Prazo</dt><dd class="col-sm-9">{{ proposta.prazo }} meses</dd>
+    <dt class="col-sm-3">Parcela</dt><dd class="col-sm-9">R$ {{ proposta.parcela }}</dd>
+    <dt class="col-sm-3">Taxa</dt><dd class="col-sm-9">{{ proposta.taxa }}% a.m.</dd>
+    <dt class="col-sm-3">Operador</dt><dd class="col-sm-9">{{ proposta.operador }}</dd>
+    <dt class="col-sm-3">Registrada em</dt><dd class="col-sm-9">{{ proposta.criado_em|date:'d/m/Y H:i' }}</dd>
+  </dl>
+
+  <h2 class="h5">Observações</h2>
+  {% if perms.propostas.change_proposta %}
+    <form method="post" action="{% url 'propostas:observacoes' proposta.pk %}" class="mb-3">
+      {% csrf_token %}
+      {{ form_observacoes.observacoes }}
+      <button class="btn btn-sm btn-outline-primary mt-2" type="submit">Salvar observações</button>
+    </form>
+  {% else %}
+    <p>{{ proposta.observacoes|default:'—'|linebreaksbr }}</p>
+  {% endif %}
+  <a href="{% url 'propostas:lista' %}">Voltar à lista</a>
+{% endblock %}
