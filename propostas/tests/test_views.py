@@ -1,10 +1,12 @@
+import datetime
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.urls import reverse
 
 from bancos.tests.factories import BancoFactory
-from beneficios.tests.factories import BeneficioFactory
+from beneficios.tests.factories import BeneficioFactory, MargemFactory
 from propostas.models import Proposta
 from propostas.tests.factories import PropostaFactory
 
@@ -86,6 +88,33 @@ def test_operador_edita_condicoes_e_observacoes(client, operador):
     assert resposta.status_code == 302
     assert proposta.prazo == 60
     assert proposta.observacoes == 'Nota'
+
+
+def test_operador_envia_proposta(client, operador):
+    proposta = PropostaFactory()
+    MargemFactory(beneficio=proposta.beneficio)
+
+    resposta = client.post(reverse('propostas:enviar', args=[proposta.pk]))
+
+    proposta.refresh_from_db()
+    assert resposta.status_code == 302
+    assert proposta.status == Proposta.Status.ENVIADA
+
+
+def test_envio_com_margem_antiga_pede_confirmacao(client, operador):
+    proposta = PropostaFactory()
+    MargemFactory(
+        beneficio=proposta.beneficio,
+        data_consulta=datetime.date.today() - datetime.timedelta(days=45),
+    )
+    url = reverse('propostas:enviar', args=[proposta.pk])
+
+    resposta = client.post(url)
+    assert resposta.status_code == 200
+    assert Proposta.objects.get().status == Proposta.Status.DIGITADA
+
+    client.post(url, {'confirmar_margem_antiga': '1'})
+    assert Proposta.objects.get().status == Proposta.Status.ENVIADA
 
 
 def test_ficha_do_cliente_mostra_propostas(client, operador):

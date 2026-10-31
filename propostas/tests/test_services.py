@@ -1,14 +1,19 @@
+import datetime
 from decimal import Decimal
 
 import pytest
 
 from bancos.tests.factories import BancoFactory
-from beneficios.tests.factories import BeneficioFactory
+from beneficios.tests.factories import BeneficioFactory, MargemFactory
 from propostas import services
 from propostas.exceptions import (
     BancoInativo,
     BeneficioInativo,
+    BeneficioSemMargem,
     CondicoesInvalidas,
+    MargemAntigaSemConfirmacao,
+    ParcelaAcimaDaMargem,
+    PropostaNaoDigitada,
     PropostaTravada,
 )
 from propostas.models import Proposta
@@ -164,3 +169,108 @@ def test_observacoes_editaveis_em_qualquer_etapa(usuario, status):
     assert proposta.observacoes == 'depois'
     assert proposta.status == status
     assert proposta.history.first().history_user == usuario
+
+
+def _proposta_com_margem(*, parcela='250.00', margem='350.00', dias=0):
+    proposta = PropostaFactory(parcela=Decimal(parcela))
+    MargemFactory(
+        beneficio=proposta.beneficio,
+        valor=Decimal(margem),
+        data_consulta=datetime.date.today() - datetime.timedelta(days=dias),
+    )
+    return proposta
+
+
+def test_envia_proposta_digitada(usuario):
+    proposta = _proposta_com_margem()
+
+    services.enviar_proposta(usuario=usuario, proposta=proposta)
+
+    proposta.refresh_from_db()
+    assert proposta.status == Proposta.Status.ENVIADA
+    assert proposta.history.first().history_user == usuario
+
+
+def test_parcela_igual_a_margem_pode_ser_enviada(usuario):
+    proposta = _proposta_com_margem(parcela='350.00', margem='350.00')
+
+    services.enviar_proposta(usuario=usuario, proposta=proposta)
+
+    assert proposta.status == Proposta.Status.ENVIADA
+
+
+def test_bloqueia_parcela_acima_da_margem_com_valores_na_mensagem(usuario):
+    proposta = _proposta_com_margem(parcela='400.00', margem='350.00')
+
+    with pytest.raises(ParcelaAcimaDaMargem) as erro:
+        services.enviar_proposta(usuario=usuario, proposta=proposta)
+
+    assert '400.00' in str(erro.value)
+    assert '350.00' in str(erro.value)
+    proposta.refresh_from_db()
+    assert proposta.status == Proposta.Status.DIGITADA
+
+
+def test_parcela_acima_da_margem_nao_passa_nem_com_confirmacao(usuario):
+    proposta = _proposta_com_margem(parcela='400.00', margem='350.00', dias=60)
+
+    with pytest.raises(ParcelaAcimaDaMargem):
+        services.enviar_proposta(usuario=usuario, proposta=proposta, confirmar_margem_antiga=True)
+
+
+def test_margem_antiga_exige_confirmacao(usuario):
+    proposta = _proposta_com_margem(dias=31)
+
+    with pytest.raises(MargemAntigaSemConfirmacao):
+        services.enviar_proposta(usuario=usuario, proposta=proposta)
+
+    proposta.refresh_from_db()
+    assert proposta.status == Proposta.Status.DIGITADA
+
+
+def test_margem_antiga_envia_com_confirmacao(usuario):
+    proposta = _proposta_com_margem(dias=31)
+
+    services.enviar_proposta(usuario=usuario, proposta=proposta, confirmar_margem_antiga=True)
+
+    assert proposta.status == Proposta.Status.ENVIADA
+
+
+def test_margem_de_30_dias_nao_e_antiga(usuario):
+    proposta = _proposta_com_margem(dias=30)
+
+    services.enviar_proposta(usuario=usuario, proposta=proposta)
+
+    assert proposta.status == Proposta.Status.ENVIADA
+
+
+def test_nao_envia_sem_margem(usuario):
+    proposta = PropostaFactory()
+
+    with pytest.raises(BeneficioSemMargem):
+        services.enviar_proposta(usuario=usuario, proposta=proposta)
+
+
+def test_so_envia_proposta_digitada(usuario):
+    proposta = _proposta_com_margem()
+    services.enviar_proposta(usuario=usuario, proposta=proposta)
+
+    with pytest.raises(PropostaNaoDigitada):
+        services.enviar_proposta(usuario=usuario, proposta=proposta)
+
+
+def test_enviada_trava_condicoes_mas_aceita_observacoes(usuario):
+    proposta = _proposta_com_margem()
+    services.enviar_proposta(usuario=usuario, proposta=proposta)
+
+    with pytest.raises(PropostaTravada):
+        services.editar_proposta(
+            usuario=usuario,
+            proposta=proposta,
+            beneficio=proposta.beneficio,
+            banco=proposta.banco,
+            **{**CONDICOES, 'valor': Decimal('1.00')},
+        )
+    services.editar_observacoes(usuario=usuario, proposta=proposta, observacoes='ok')
+    proposta.refresh_from_db()
+    assert proposta.observacoes == 'ok'

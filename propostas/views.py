@@ -7,6 +7,7 @@ from accounts.permissions import PermissaoNecessariaMixin
 from bancos import selectors as bancos_selectors
 from core.exceptions import ErroDeNegocio
 from propostas import selectors, services
+from propostas.exceptions import MargemAntigaSemConfirmacao
 from propostas.forms import ObservacoesForm, PropostaForm
 from propostas.models import Proposta
 
@@ -76,11 +77,37 @@ class DetalheView(PermissaoNecessariaMixin, View):
 
     def get(self, request, pk):
         proposta = _buscar(pk)
-        contexto = {
-            'proposta': proposta,
-            'form_observacoes': ObservacoesForm(initial={'observacoes': proposta.observacoes}),
-        }
-        return render(request, 'propostas/detalhe.html', contexto)
+        return render(request, 'propostas/detalhe.html', _contexto_detalhe(proposta))
+
+
+def _contexto_detalhe(proposta, **extra):
+    return {
+        'proposta': proposta,
+        'form_observacoes': ObservacoesForm(initial={'observacoes': proposta.observacoes}),
+        **extra,
+    }
+
+
+class EnviarView(PermissaoNecessariaMixin, View):
+    permission_required = 'propostas.change_proposta'
+    http_method_names = ['post']
+
+    def post(self, request, pk):
+        proposta = _buscar(pk)
+        confirmar = request.POST.get('confirmar_margem_antiga') == '1'
+        try:
+            services.enviar_proposta(
+                usuario=request.user, proposta=proposta, confirmar_margem_antiga=confirmar
+            )
+        except MargemAntigaSemConfirmacao as erro:
+            messages.warning(request, str(erro))
+            contexto = _contexto_detalhe(proposta, pedir_confirmacao=True)
+            return render(request, 'propostas/detalhe.html', contexto)
+        except ErroDeNegocio as erro:
+            messages.error(request, str(erro))
+        else:
+            messages.success(request, 'Proposta enviada ao Banco.')
+        return redirect('propostas:detalhe', pk=proposta.pk)
 
 
 class EditarView(PermissaoNecessariaMixin, View):

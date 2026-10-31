@@ -9,5 +9,6 @@ urlpatterns = [
     path('nova/', views.CriarView.as_view(), name='criar'),
     path('<int:pk>/', views.DetalheView.as_view(), name='detalhe'),
     path('<int:pk>/editar/', views.EditarView.as_view(), name='editar'),
+    path('<int:pk>/enviar/', views.EnviarView.as_view(), name='enviar'),
     path('<int:pk>/observacoes/', views.EditarObservacoesView.as_view(), name='observacoes'),
 ]

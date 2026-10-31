@@ -8,7 +8,16 @@
       <span class="badge text-bg-secondary">{{ proposta.get_status_display }}</span>
     </h1>
     {% if proposta.status == 'digitada' and perms.propostas.change_proposta %}
-      <a class="btn btn-outline-primary" href="{% url 'propostas:editar' proposta.pk %}">Editar</a>
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-primary" href="{% url 'propostas:editar' proposta.pk %}">Editar</a>
+        <form method="post" action="{% url 'propostas:enviar' proposta.pk %}">
+          {% csrf_token %}
+          {% if pedir_confirmacao %}<input type="hidden" name="confirmar_margem_antiga" value="1">{% endif %}
+          <button class="btn {% if pedir_confirmacao %}btn-warning{% else %}btn-primary{% endif %}" type="submit">
+            {% if pedir_confirmacao %}Enviar mesmo assim{% else %}Enviar ao Banco{% endif %}
+          </button>
+        </form>
+      </div>
     {% endif %}
   </div>
   <dl class="row">

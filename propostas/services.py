@@ -1,9 +1,14 @@
 from django.db import transaction
 
+from beneficios.selectors import margem_vigente
 from propostas.exceptions import (
     BancoInativo,
     BeneficioInativo,
+    BeneficioSemMargem,
     CondicoesInvalidas,
+    MargemAntigaSemConfirmacao,
+    ParcelaAcimaDaMargem,
+    PropostaNaoDigitada,
     PropostaTravada,
 )
 from propostas.models import Proposta
@@ -70,6 +75,23 @@ def editar_proposta(
     proposta.parcela = parcela
     proposta.taxa = taxa
     proposta.observacoes = observacoes
+    _salvar(proposta, usuario=usuario)
+    return proposta
+
+
+@transaction.atomic
+def enviar_proposta(*, usuario, proposta, confirmar_margem_antiga=False):
+    """Envia a Proposta ao Banco, desde que a parcela caiba na Margem vigente."""
+    if proposta.status != Proposta.Status.DIGITADA:
+        raise PropostaNaoDigitada
+    margem = margem_vigente(beneficio=proposta.beneficio)
+    if margem is None:
+        raise BeneficioSemMargem
+    if proposta.parcela > margem.valor:
+        raise ParcelaAcimaDaMargem(parcela=proposta.parcela, margem=margem.valor)
+    if margem.antiga and not confirmar_margem_antiga:
+        raise MargemAntigaSemConfirmacao(data_consulta=margem.data_consulta)
+    proposta.status = Proposta.Status.ENVIADA
     _salvar(proposta, usuario=usuario)
     return proposta
 
