@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Clientes · Consignado{% endblock %}
+
+{% block conteudo %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Clientes</h1>
+    {% if perms.clientes.add_cliente %}
+      <a class="btn btn-primary" href="{% url 'clientes:criar' %}">Novo Cliente</a>
+    {% endif %}
+  </div>
+  <form class="mb-3" role="search" action="{% url 'clientes:lista' %}" method="get">
+    <input type="search" name="q" value="{{ busca }}" class="form-control" autocomplete="off"
+           placeholder="Buscar por CPF ou nome"
+           hx-get="{% url 'clientes:lista' %}" hx-trigger="input changed delay:300ms, search"
+           hx-target="#tabela-clientes" hx-swap="outerHTML">
+  </form>
+  {% include 'clientes/partials/_tabela.html' %}
+{% endblock %}

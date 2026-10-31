@@ -48,8 +48,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'django_htmx',
+    'simple_history',
     'accounts',
     'inicio',
+    'clientes',
+    'beneficios',
+    'bancos',
+    'propostas',
+    'contratos',
 ]
 
 MIDDLEWARE = [

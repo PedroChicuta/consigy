@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Benefício {{ beneficio.numero }} · Consignado{% endblock %}
+
+{% block conteudo %}
+  <h1 class="h3">Benefício {{ beneficio.numero }}
+    {% if not beneficio.ativo %}<span class="badge text-bg-secondary">Inativo</span>{% endif %}
+  </h1>
+  <dl class="row">
+    <dt class="col-sm-3">Cliente</dt>
+    <dd class="col-sm-9"><a href="{% url 'clientes:detalhe' beneficio.cliente.pk %}">{{ beneficio.cliente.nome }}</a></dd>
+    <dt class="col-sm-3">Espécie</dt><dd class="col-sm-9">{{ beneficio.get_especie_display }}</dd>
+    <dt class="col-sm-3">Margem vigente</dt>
+    <dd class="col-sm-9">
+      {% if margem_vigente %}
+        R$ {{ margem_vigente.valor }} (consulta de {{ margem_vigente.data_consulta|date:'d/m/Y' }})
+        {% if margem_vigente.antiga %}
+          <div class="alert alert-warning mt-2 mb-0">Margem com mais de 30 dias: faça uma nova consulta.</div>
+        {% endif %}
+      {% else %}
+        Nenhuma Margem registrada.
+      {% endif %}
+    </dd>
+  </dl>
+
+  {% if beneficio.ativo and perms.beneficios.add_margem %}
+    <h2 class="h5 mt-4">Registrar Margem</h2>
+    <form method="post" action="{% url 'beneficios:registrar_margem' beneficio.pk %}" novalidate>
+      {% csrf_token %}
+      {% for erro in form.non_field_errors %}<div class="text-danger small mb-2">{{ erro }}</div>{% endfor %}
+      {% for campo in form %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+          {{ campo }}
+          {% for erro in campo.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+        </div>
+      {% endfor %}
+      <button class="btn btn-primary" type="submit">Registrar</button>
+    </form>
+  {% endif %}
+
+  <h2 class="h5 mt-4">Histórico de Margens</h2>
+  <table class="table table-sm">
+    <thead><tr><th>Data da consulta</th><th>Valor</th></tr></thead>
+    <tbody>
+      {% for margem in margens %}
+        <tr><td>{{ margem.data_consulta|date:'d/m/Y' }}</td><td>R$ {{ margem.valor }}</td></tr>
+      {% empty %}
+        <tr><td colspan="2">Nenhuma Margem registrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <a href="{% url 'clientes:detalhe' beneficio.cliente.pk %}">Voltar à ficha do Cliente</a>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{% if proposta %}Editar Proposta{% else %}Nova Proposta{% endif %} · Consignado{% endblock %}
+
+{% block conteudo %}
+  <h1 class="h3">{% if proposta %}Editar Proposta {{ proposta.pk }}{% else %}Nova Proposta{% endif %}</h1>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% for erro in form.non_field_errors %}<div class="text-danger small mb-2">{{ erro }}</div>{% endfor %}
+    {% for campo in form %}
+      <div class="mb-3">
+        <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+        {{ campo }}
+        {% for erro in campo.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+      </div>
+    {% endfor %}
+    <button class="btn btn-primary" type="submit">Salvar</button>
+    <a class="btn btn-secondary" href="{% if proposta %}{% url 'propostas:detalhe' proposta.pk %}{% else %}{% url 'propostas:lista' %}{% endif %}">Cancelar</a>
+  </form>
+{% endblock %}

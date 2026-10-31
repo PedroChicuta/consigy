@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Proposta {{ proposta.pk }} · Consignado{% endblock %}
+
+{% block conteudo %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Proposta {{ proposta.pk }}
+      <span class="badge text-bg-secondary">{{ proposta.get_status_display }}</span>
+    </h1>
+    {% if proposta.status == 'digitada' and perms.propostas.change_proposta %}
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-primary" href="{% url 'propostas:editar' proposta.pk %}">Editar</a>
+        <form method="post" action="{% url 'propostas:enviar' proposta.pk %}">
+          {% csrf_token %}
+          {% if pedir_confirmacao %}<input type="hidden" name="confirmar_margem_antiga" value="1">{% endif %}
+          <button class="btn {% if pedir_confirmacao %}btn-warning{% else %}btn-primary{% endif %}" type="submit">
+            {% if pedir_confirmacao %}Enviar mesmo assim{% else %}Enviar ao Banco{% endif %}
+          </button>
+        </form>
+      </div>
+    {% endif %}
+    {% if proposta.status == 'enviada' and perms.propostas.change_proposta %}
+      <form method="post" action="{% url 'propostas:avancar' proposta.pk 'em_analise' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Marcar Em análise</button></form>
+    {% elif proposta.status == 'em_analise' and perms.propostas.change_proposta %}
+      <form method="post" action="{% url 'propostas:avancar' proposta.pk 'aprovada' %}">{% csrf_token %}<button class="btn btn-success" type="submit">Marcar Aprovada</button></form>
+    {% elif proposta.status == 'aprovada' and perms.propostas.change_proposta %}
+      <form method="post" action="{% url 'propostas:formalizar' proposta.pk %}">{% csrf_token %}<button class="btn btn-success" type="submit">Formalizar</button></form>
+    {% endif %}
+  </div>
+  <dl class="row">
+    <dt class="col-sm-3">Cliente</dt>
+    <dd class="col-sm-9"><a href="{% url 'clientes:detalhe' proposta.beneficio.cliente.pk %}">{{ proposta.beneficio.cliente.nome }}</a></dd>
+    <dt class="col-sm-3">Benefício</dt>
+    <dd class="col-sm-9"><a href="{% url 'beneficios:detalhe' proposta.beneficio.pk %}">{{ proposta.beneficio.numero }}</a></dd>
+    <dt class="col-sm-3">Banco</dt><dd class="col-sm-9">{{ proposta.banco.nome }}</dd>
+    <dt class="col-sm-3">Valor</dt><dd class="col-sm-9">R$ {{ proposta.valor }}</dd>
+    <dt class="col-sm-3">Prazo</dt><dd class="col-sm-9">{{ proposta.prazo }} meses</dd>
+    <dt class="col-sm-3">Parcela</dt><dd class="col-sm-9">R$ {{ proposta.parcela }}</dd>
+    <dt class="col-sm-3">Taxa</dt><dd class="col-sm-9">{{ proposta.taxa }}% a.m.</dd>
+    {% if proposta.motivo %}<dt class="col-sm-3">Motivo</dt><dd class="col-sm-9">{{ proposta.motivo|linebreaksbr }}</dd>{% endif %}
+    <dt class="col-sm-3">Operador</dt><dd class="col-sm-9">{{ proposta.operador }}</dd>
+    <dt class="col-sm-3">Registrada em</dt><dd class="col-sm-9">{{ proposta.criado_em|date:'d/m/Y H:i' }}</dd>
+  </dl>
+
+  {% if contratos %}
+    <h2 class="h5">Contrato</h2>
+    {% include 'contratos/partials/_linhas.html' %}
+  {% endif %}
+
+  <h2 class="h5">Observações</h2>
+  {% if perms.propostas.change_proposta %}
+    <form method="post" action="{% url 'propostas:observacoes' proposta.pk %}" class="mb-3">
+      {% csrf_token %}
+      {{ form_observacoes.observacoes }}
+      <button class="btn btn-sm btn-outline-primary mt-2" type="submit">Salvar observações</button>
+    </form>
+  {% else %}
+    <p>{{ proposta.observacoes|default:'—'|linebreaksbr }}</p>
+  {% endif %}
+  {% if not proposta.encerrada and perms.propostas.change_proposta %}
+    {% if proposta.status != 'aprovada' or perms.propostas.cancelar_proposta_aprovada %}
+      <h2 class="h5">Encerrar</h2>
+      <div class="row g-2 mb-3">
+        <form method="post" action="{% url 'propostas:recusar' proposta.pk %}" class="col-md-6">
+          {% csrf_token %}
+          <input class="form-control mb-1" name="motivo" placeholder="Motivo" required>
+          <button class="btn btn-sm btn-outline-danger" type="submit">Recusar</button>
+        </form>
+        <form method="post" action="{% url 'propostas:cancelar' proposta.pk %}" class="col-md-6">
+          {% csrf_token %}
+          <input class="form-control mb-1" name="motivo" placeholder="Motivo" required>
+          <button class="btn btn-sm btn-outline-secondary" type="submit">Cancelar</button>
+        </form>
+      </div>
+    {% endif %}
+  {% endif %}
+  {% if historico %}
+    <h2 class="h5 mt-4">Histórico de status</h2>
+    <table class="table table-sm">
+      <thead><tr><th>Data</th><th>Autor</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for registro in historico %}
+          <tr>
+            <td>{{ registro.history_date|date:'d/m/Y H:i' }}</td>
+            <td>{{ registro.history_user|default:'—' }}</td>
+            <td>{{ registro.get_status_display }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+  <a href="{% url 'propostas:lista' %}">Voltar à lista</a>
+{% endblock %}

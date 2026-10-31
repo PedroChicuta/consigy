@@ -40,3 +40,4 @@ htmlcov/
 *.swo
 *~
 .DS_Store
+.ralph-logs/

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Contrato {{ contrato.pk }} · Consignado{% endblock %}
+
+{% block conteudo %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Contrato {{ contrato.pk }}
+      <span class="badge text-bg-secondary">{{ contrato.get_status_display }}</span>
+    </h1>
+    {% if perms.contratos.change_contrato %}
+      {% if contrato.status == 'formalizado' %}
+        <form method="post" action="{% url 'contratos:avancar' contrato.pk 'averbado' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Marcar Averbado</button></form>
+      {% elif contrato.status == 'averbado' %}
+        <form method="post" action="{% url 'contratos:avancar' contrato.pk 'pago' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Marcar Pago</button></form>
+      {% elif contrato.status == 'pago' %}
+        <form method="post" action="{% url 'contratos:avancar' contrato.pk 'quitado' %}">{% csrf_token %}<button class="btn btn-success" type="submit">Marcar Quitado</button></form>
+      {% endif %}
+    {% endif %}
+  </div>
+  <dl class="row">
+    <dt class="col-sm-3">Cliente</dt>
+    <dd class="col-sm-9"><a href="{% url 'clientes:detalhe' contrato.cliente.pk %}">{{ contrato.cliente.nome }}</a></dd>
+    <dt class="col-sm-3">Proposta</dt>
+    <dd class="col-sm-9"><a href="{% url 'propostas:detalhe' contrato.proposta_id %}">{{ contrato.proposta_id }}</a></dd>
+    <dt class="col-sm-3">Banco</dt><dd class="col-sm-9">{{ contrato.proposta.banco.nome }}</dd>
+    <dt class="col-sm-3">Valor</dt><dd class="col-sm-9">R$ {{ contrato.valor }}</dd>
+    <dt class="col-sm-3">Prazo</dt><dd class="col-sm-9">{{ contrato.prazo }} meses</dd>
+    <dt class="col-sm-3">Parcela</dt><dd class="col-sm-9">R$ {{ contrato.parcela }}</dd>
+    <dt class="col-sm-3">Taxa</dt><dd class="col-sm-9">{{ contrato.taxa }}% a.m.</dd>
+    {% if contrato.motivo %}<dt class="col-sm-3">Motivo</dt><dd class="col-sm-9">{{ contrato.motivo|linebreaksbr }}</dd>{% endif %}
+    <dt class="col-sm-3">Criado em</dt><dd class="col-sm-9">{{ contrato.criado_em|date:'d/m/Y H:i' }}</dd>
+  </dl>
+  {% if perms.contratos.change_contrato %}
+    {% if contrato.status == 'formalizado' or contrato.status == 'averbado' %}
+      <h2 class="h5">Cancelar</h2>
+      <form method="post" action="{% url 'contratos:cancelar' contrato.pk %}" class="mb-3">
+        {% csrf_token %}
+        <input class="form-control mb-1" name="motivo" placeholder="Motivo (averbação ou pagamento falhou)" required>
+        <button class="btn btn-sm btn-outline-danger" type="submit">Cancelar Contrato</button>
+      </form>
+    {% endif %}
+  {% endif %}
+  {% if historico %}
+    <h2 class="h5 mt-4">Histórico de status</h2>
+    <table class="table table-sm">
+      <thead><tr><th>Data</th><th>Autor</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for registro in historico %}
+          <tr>
+            <td>{{ registro.history_date|date:'d/m/Y H:i' }}</td>
+            <td>{{ registro.history_user|default:'—' }}</td>
+            <td>{{ registro.get_status_display }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+  <a href="{% url 'contratos:lista' %}">Voltar à lista</a>
+{% endblock %}

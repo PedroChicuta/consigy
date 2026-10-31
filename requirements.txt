@@ -9,3 +9,4 @@ pytest==9.2.0
 pytest-django==4.14.0
 factory_boy==3.3.3
 ruff==0.17.3
+django-simple-history==3.13.0
