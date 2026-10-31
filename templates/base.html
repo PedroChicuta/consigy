@@ -11,6 +11,12 @@
   <nav class="navbar navbar-expand bg-body-tertiary mb-4">
     <div class="container">
       <a class="navbar-brand" href="/">Consignado</a>
+      {% if user.is_authenticated %}
+        <form method="post" action="{% url 'accounts:logout' %}" class="d-flex">
+          {% csrf_token %}
+          <button class="btn btn-outline-secondary btn-sm" type="submit">Sair</button>
+        </form>
+      {% endif %}
     </div>
   </nav>
   <main class="container">

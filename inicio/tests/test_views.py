@@ -1,10 +1,16 @@
 import pytest
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 
-@pytest.mark.django_db
-def test_pagina_inicial_usa_layout_base(client):
-    resposta = client.get(reverse('inicio:index'))
+@pytest.fixture
+def client_logado(client, db):
+    client.force_login(get_user_model().objects.create_user(username='maria', password='x'))
+    return client
+
+
+def test_pagina_inicial_usa_layout_base(client_logado):
+    resposta = client_logado.get(reverse('inicio:index'))
 
     assert resposta.status_code == 200
     html = resposta.content.decode()
@@ -14,8 +20,8 @@ def test_pagina_inicial_usa_layout_base(client):
     assert 'Início' in html
 
 
-def test_requisicao_htmx_devolve_so_o_fragmento(client):
-    resposta = client.get(reverse('inicio:index'), headers={'HX-Request': 'true'})
+def test_requisicao_htmx_devolve_so_o_fragmento(client_logado):
+    resposta = client_logado.get(reverse('inicio:index'), headers={'HX-Request': 'true'})
 
     assert resposta.status_code == 200
     html = resposta.content.decode()
