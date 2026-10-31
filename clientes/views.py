@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 
 from accounts.permissions import PermissaoNecessariaMixin
+from beneficios import selectors as beneficios_selectors
 from clientes import selectors, services
 from clientes.exceptions import CpfDuplicado
 from clientes.forms import ClienteForm, NovoClienteForm
@@ -53,7 +54,10 @@ class DetalheView(PermissaoNecessariaMixin, View):
 
     def get(self, request, pk):
         cliente = get_object_or_404(Cliente, pk=pk)
-        contexto = {'cliente': cliente}
+        contexto = {
+            'cliente': cliente,
+            'beneficios': beneficios_selectors.beneficios_do_cliente(cliente=cliente),
+        }
         if request.user.has_perm('clientes.view_historicalcliente'):
             contexto['historico'] = selectors.historico_do_cliente(cliente=cliente)
         return render(request, 'clientes/detalhe.html', contexto)
