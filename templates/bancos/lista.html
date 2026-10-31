@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Bancos · Consignado{% endblock %}
+
+{% block conteudo %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Bancos</h1>
+    {% if perms.bancos.add_banco %}
+      <a class="btn btn-primary" href="{% url 'bancos:criar' %}">Novo Banco</a>
+    {% endif %}
+  </div>
+  <table class="table table-hover">
+    <thead><tr><th>Nome</th><th>Código</th><th>Situação</th><th></th></tr></thead>
+    <tbody>
+      {% for banco in bancos %}
+        <tr>
+          <td>{{ banco.nome }}</td>
+          <td>{{ banco.codigo }}</td>
+          <td>{% if banco.ativo %}Ativo{% else %}<span class="text-muted">Inativo</span>{% endif %}</td>
+          <td>
+            {% if perms.bancos.change_banco %}
+              <div class="d-flex gap-2 justify-content-end">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'bancos:editar' banco.pk %}">Editar</a>
+                <form method="post" action="{% if banco.ativo %}{% url 'bancos:inativar' banco.pk %}{% else %}{% url 'bancos:reativar' banco.pk %}{% endif %}">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-secondary" type="submit">{% if banco.ativo %}Inativar{% else %}Reativar{% endif %}</button>
+                </form>
+              </div>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="text-muted">Nenhum Banco cadastrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
