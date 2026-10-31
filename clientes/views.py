@@ -9,6 +9,7 @@ from clientes import selectors, services
 from clientes.exceptions import CpfDuplicado
 from clientes.forms import ClienteForm, NovoClienteForm
 from clientes.models import Cliente
+from contratos import selectors as contratos_selectors
 from core.exceptions import ErroDeNegocio
 from propostas import selectors as propostas_selectors
 
@@ -61,6 +62,8 @@ class DetalheView(PermissaoNecessariaMixin, View):
         }
         if request.user.has_perm('propostas.view_proposta'):
             contexto['propostas'] = propostas_selectors.propostas_do_cliente(cliente=cliente)
+        if request.user.has_perm('contratos.view_contrato'):
+            contexto['contratos'] = contratos_selectors.contratos_do_cliente(cliente=cliente)
         if request.user.has_perm('clientes.view_historicalcliente'):
             contexto['historico'] = selectors.historico_do_cliente(cliente=cliente)
         return render(request, 'clientes/detalhe.html', contexto)

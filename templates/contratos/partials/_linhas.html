@@ -1,0 +1,20 @@
+<table class="table table-sm">
+  <thead>
+    <tr><th>#</th><th>Proposta</th><th>Banco</th><th>Valor</th><th>Prazo</th><th>Parcela</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    {% for contrato in contratos %}
+      <tr>
+        <td>{{ contrato.pk }}</td>
+        <td><a href="{% url 'propostas:detalhe' contrato.proposta_id %}">{{ contrato.proposta_id }}</a></td>
+        <td>{{ contrato.proposta.banco.nome }}</td>
+        <td>R$ {{ contrato.valor }}</td>
+        <td>{{ contrato.prazo }}x</td>
+        <td>R$ {{ contrato.parcela }}</td>
+        <td>{{ contrato.get_status_display }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="text-muted">Nenhum Contrato.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>

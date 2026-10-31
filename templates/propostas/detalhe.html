@@ -23,6 +23,8 @@
       <form method="post" action="{% url 'propostas:avancar' proposta.pk 'em_analise' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Marcar Em análise</button></form>
     {% elif proposta.status == 'em_analise' and perms.propostas.change_proposta %}
       <form method="post" action="{% url 'propostas:avancar' proposta.pk 'aprovada' %}">{% csrf_token %}<button class="btn btn-success" type="submit">Marcar Aprovada</button></form>
+    {% elif proposta.status == 'aprovada' and perms.propostas.change_proposta %}
+      <form method="post" action="{% url 'propostas:formalizar' proposta.pk %}">{% csrf_token %}<button class="btn btn-success" type="submit">Formalizar</button></form>
     {% endif %}
   </div>
   <dl class="row">
@@ -39,6 +41,11 @@
     <dt class="col-sm-3">Operador</dt><dd class="col-sm-9">{{ proposta.operador }}</dd>
     <dt class="col-sm-3">Registrada em</dt><dd class="col-sm-9">{{ proposta.criado_em|date:'d/m/Y H:i' }}</dd>
   </dl>
+
+  {% if contratos %}
+    <h2 class="h5">Contrato</h2>
+    {% include 'contratos/partials/_linhas.html' %}
+  {% endif %}
 
   <h2 class="h5">Observações</h2>
   {% if perms.propostas.change_proposta %}

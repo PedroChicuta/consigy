@@ -63,6 +63,11 @@
     {% include 'propostas/partials/_linhas.html' with propostas=propostas %}
   {% endif %}
 
+  {% if contratos is not None %}
+    <h2 class="h5 mt-4">Contratos</h2>
+    {% include 'contratos/partials/_linhas.html' %}
+  {% endif %}
+
   {% if historico %}
     <h2 class="h5 mt-4">Histórico de alterações</h2>
     <table class="table table-sm">

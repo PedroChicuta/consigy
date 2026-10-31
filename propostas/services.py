@@ -1,6 +1,7 @@
 from django.db import transaction
 
 from beneficios.selectors import margem_vigente
+from contratos.services import criar_contrato
 from propostas.exceptions import (
     BancoInativo,
     BeneficioInativo,
@@ -125,6 +126,19 @@ def avancar_proposta(*, usuario, proposta, status):
     proposta.status = status
     _salvar(proposta, usuario=usuario)
     return proposta
+
+
+@transaction.atomic
+def formalizar_proposta(*, usuario, proposta):
+    """Formaliza uma Proposta Aprovada e cria, na mesma operação, o Contrato dela."""
+    if proposta.status != Proposta.Status.APROVADA:
+        raise TransicaoInvalida(
+            f'Só é possível formalizar uma Proposta Aprovada; esta está '
+            f'{proposta.get_status_display()}.'
+        )
+    proposta.status = Proposta.Status.FORMALIZADA
+    _salvar(proposta, usuario=usuario)
+    return criar_contrato(usuario=usuario, proposta=proposta)
 
 
 def _encerrar(*, usuario, proposta, status, motivo):

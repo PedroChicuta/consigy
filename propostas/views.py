@@ -5,6 +5,7 @@ from django.views import View
 
 from accounts.permissions import PermissaoNecessariaMixin
 from bancos import selectors as bancos_selectors
+from contratos import selectors as contratos_selectors
 from core.exceptions import ErroDeNegocio
 from propostas import selectors, services
 from propostas.exceptions import MargemAntigaSemConfirmacao
@@ -80,8 +81,13 @@ class DetalheView(PermissaoNecessariaMixin, View):
         historico = None
         if request.user.has_perm('propostas.view_historicalproposta'):
             historico = selectors.historico_da_proposta(proposta=proposta)
+        contratos = None
+        if request.user.has_perm('contratos.view_contrato'):
+            contratos = contratos_selectors.contratos_da_proposta(proposta=proposta)
         return render(
-            request, 'propostas/detalhe.html', _contexto_detalhe(proposta, historico=historico)
+            request,
+            'propostas/detalhe.html',
+            _contexto_detalhe(proposta, historico=historico, contratos=contratos),
         )
 
 
@@ -181,6 +187,21 @@ class AvancarView(PermissaoNecessariaMixin, View):
             messages.error(request, str(erro))
         else:
             messages.success(request, f'Proposta {proposta.get_status_display().lower()}.')
+        return redirect('propostas:detalhe', pk=proposta.pk)
+
+
+class FormalizarView(PermissaoNecessariaMixin, View):
+    permission_required = 'propostas.change_proposta'
+    http_method_names = ['post']
+
+    def post(self, request, pk):
+        proposta = _buscar(pk)
+        try:
+            services.formalizar_proposta(usuario=request.user, proposta=proposta)
+        except ErroDeNegocio as erro:
+            messages.error(request, str(erro))
+        else:
+            messages.success(request, 'Proposta formalizada e Contrato criado.')
         return redirect('propostas:detalhe', pk=proposta.pk)
 
 
