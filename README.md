@@ -84,6 +84,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # ajuste a SECRET_KEY
+cd src
 python manage.py migrate
 python manage.py runserver
 ```

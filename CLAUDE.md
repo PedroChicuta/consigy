@@ -1,12 +1,12 @@
 # CLAUDE.md
 
-Projeto Django 6.1 (Python 3.14) para o domínio de crédito consignado. O pacote de configuração é `core/`. Ainda não há apps próprios.
+Projeto Django 6.1 (Python 3.14) para o domínio de crédito consignado. O código da aplicação fica em `src/` (source root, sem prefixo nos imports): configuração em `src/core/`, apps (`accounts`, `inicio`, `clientes`, `beneficios`, `bancos`, `propostas`, `contratos`), `src/templates/` e `src/manage.py`. Na raiz ficam infra, docs, `.env`, `db.sqlite3` e `staticfiles/` (ver ADR 0007).
 
 ## Comandos
 
 - Dev: `docker compose up --build` / `docker compose down`
 - Prod: `docker compose -f docker-compose.prod.yml up -d --build` / `... down` (`down -v` apaga o volume do PostgreSQL)
-- Sem Docker: `.venv/bin/python manage.py runserver`, `migrate`, `test`, `check`
+- Sem Docker (a partir de `src/`): `../.venv/bin/python manage.py runserver`, `migrate`, `check`. Testes e lint rodam da raiz: `.venv/bin/pytest`, `.venv/bin/ruff check`
 - Dependências em `requirements.txt` (versões fixas). Ao adicionar uma, instale no `.venv` e atualize o arquivo.
 
 ## Configuração
@@ -21,7 +21,7 @@ Projeto Django 6.1 (Python 3.14) para o domínio de crédito consignado. O pacot
 ## Convenções
 
 - Código e comentários em português quando houver texto de domínio; mantenha o estilo do `settings.py` (aspas simples).
-- Novos apps: `python manage.py startapp <nome>` e registrar em `INSTALLED_APPS`.
+- Novos apps: em `src/`, `python manage.py startapp <nome>` e registrar em `INSTALLED_APPS`.
 
 ## ADRs
 

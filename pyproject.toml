@@ -1,9 +1,12 @@
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "core.settings"
+pythonpath = ["src"]
+testpaths = ["src"]
 python_files = ["test_*.py"]
 
 [tool.ruff]
 line-length = 100
+src = ["src"]
 extend-exclude = ["migrations"]
 
 [tool.ruff.lint]
