@@ -8,7 +8,7 @@ from bancos import selectors as bancos_selectors
 from core.exceptions import ErroDeNegocio
 from propostas import selectors, services
 from propostas.exceptions import MargemAntigaSemConfirmacao
-from propostas.forms import ObservacoesForm, PropostaForm
+from propostas.forms import MotivoForm, ObservacoesForm, PropostaForm
 from propostas.models import Proposta
 
 POR_PAGINA = 25
@@ -77,12 +77,18 @@ class DetalheView(PermissaoNecessariaMixin, View):
 
     def get(self, request, pk):
         proposta = _buscar(pk)
-        return render(request, 'propostas/detalhe.html', _contexto_detalhe(proposta))
+        historico = None
+        if request.user.has_perm('propostas.view_historicalproposta'):
+            historico = selectors.historico_da_proposta(proposta=proposta)
+        return render(
+            request, 'propostas/detalhe.html', _contexto_detalhe(proposta, historico=historico)
+        )
 
 
 def _contexto_detalhe(proposta, **extra):
     return {
         'proposta': proposta,
+        'historico': None,
         'form_observacoes': ObservacoesForm(initial={'observacoes': proposta.observacoes}),
         **extra,
     }
@@ -161,3 +167,55 @@ class EditarObservacoesView(PermissaoNecessariaMixin, View):
             )
             messages.success(request, 'Observações atualizadas.')
         return redirect('propostas:detalhe', pk=proposta.pk)
+
+
+class AvancarView(PermissaoNecessariaMixin, View):
+    permission_required = 'propostas.change_proposta'
+    http_method_names = ['post']
+
+    def post(self, request, pk, status):
+        proposta = _buscar(pk)
+        try:
+            services.avancar_proposta(usuario=request.user, proposta=proposta, status=status)
+        except ErroDeNegocio as erro:
+            messages.error(request, str(erro))
+        else:
+            messages.success(request, f'Proposta {proposta.get_status_display().lower()}.')
+        return redirect('propostas:detalhe', pk=proposta.pk)
+
+
+class _EncerrarView(PermissaoNecessariaMixin, View):
+    permission_required = 'propostas.change_proposta'
+    http_method_names = ['post']
+    mensagem = ''
+
+    def encerrar(self, **kwargs):
+        raise NotImplementedError
+
+    def post(self, request, pk):
+        proposta = _buscar(pk)
+        form = MotivoForm(request.POST)
+        if not form.is_valid():
+            messages.error(request, 'Informe o motivo.')
+        else:
+            try:
+                self.encerrar(usuario=request.user, proposta=proposta, **form.cleaned_data)
+            except ErroDeNegocio as erro:
+                messages.error(request, str(erro))
+            else:
+                messages.success(request, self.mensagem)
+        return redirect('propostas:detalhe', pk=proposta.pk)
+
+
+class RecusarView(_EncerrarView):
+    mensagem = 'Proposta recusada.'
+
+    def encerrar(self, **kwargs):
+        services.recusar_proposta(**kwargs)
+
+
+class CancelarView(_EncerrarView):
+    mensagem = 'Proposta cancelada.'
+
+    def encerrar(self, **kwargs):
+        services.cancelar_proposta(**kwargs)

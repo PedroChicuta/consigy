@@ -5,13 +5,16 @@ from propostas.exceptions import (
     BancoInativo,
     BeneficioInativo,
     BeneficioSemMargem,
+    CancelamentoSemPermissao,
     CondicoesInvalidas,
     MargemAntigaSemConfirmacao,
+    MotivoObrigatorio,
     ParcelaAcimaDaMargem,
     PropostaNaoDigitada,
     PropostaTravada,
+    TransicaoInvalida,
 )
-from propostas.models import Proposta
+from propostas.models import FINAIS, Proposta
 
 CAMPOS_POSITIVOS = {
     'valor': 'O valor',
@@ -102,3 +105,55 @@ def editar_observacoes(*, usuario, proposta, observacoes):
     proposta.observacoes = observacoes
     _salvar(proposta, usuario=usuario)
     return proposta
+
+
+# Cada etapa só é marcada a partir da anterior.
+ETAPA_ANTERIOR = {
+    Proposta.Status.EM_ANALISE: Proposta.Status.ENVIADA,
+    Proposta.Status.APROVADA: Proposta.Status.EM_ANALISE,
+}
+
+
+@transaction.atomic
+def avancar_proposta(*, usuario, proposta, status):
+    """Marca Em análise ou Aprovada, na ordem."""
+    anterior = ETAPA_ANTERIOR.get(status)
+    if anterior is None or proposta.status != anterior:
+        raise TransicaoInvalida(
+            f'Não é possível marcar essa etapa a partir de {proposta.get_status_display()}.'
+        )
+    proposta.status = status
+    _salvar(proposta, usuario=usuario)
+    return proposta
+
+
+def _encerrar(*, usuario, proposta, status, motivo):
+    motivo = (motivo or '').strip()
+    if not motivo:
+        raise MotivoObrigatorio
+    if proposta.status in FINAIS:
+        raise TransicaoInvalida(f'A Proposta já está {proposta.get_status_display()}.')
+    proposta.status = status
+    proposta.motivo = motivo
+    _salvar(proposta, usuario=usuario)
+    return proposta
+
+
+@transaction.atomic
+def recusar_proposta(*, usuario, proposta, motivo):
+    """O Banco recusou; vale de qualquer etapa antes de Formalizada."""
+    return _encerrar(
+        usuario=usuario, proposta=proposta, status=Proposta.Status.RECUSADA, motivo=motivo
+    )
+
+
+@transaction.atomic
+def cancelar_proposta(*, usuario, proposta, motivo):
+    """Desistência. Depois de Aprovada, só quem tem a permissão de Supervisor cancela."""
+    if proposta.status == Proposta.Status.APROVADA and not usuario.has_perm(
+        'propostas.cancelar_proposta_aprovada'
+    ):
+        raise CancelamentoSemPermissao
+    return _encerrar(
+        usuario=usuario, proposta=proposta, status=Proposta.Status.CANCELADA, motivo=motivo
+    )

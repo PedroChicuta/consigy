@@ -44,3 +44,7 @@ class ObservacoesForm(forms.Form):
         required=False,
         widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
     )
+
+
+class MotivoForm(forms.Form):
+    motivo = forms.CharField(label='Motivo')

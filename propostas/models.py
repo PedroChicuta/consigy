@@ -29,12 +29,16 @@ class Proposta(models.Model):
     parcela = models.DecimalField('parcela (R$)', max_digits=10, decimal_places=2)
     taxa = models.DecimalField('taxa (% a.m.)', max_digits=6, decimal_places=4)
     observacoes = models.TextField('observações', blank=True)
+    motivo = models.TextField('motivo do encerramento', blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 
     history = HistoricalRecords()
 
     class Meta:
         ordering = ['-criado_em', '-pk']
+        permissions = [
+            ('cancelar_proposta_aprovada', 'Pode cancelar uma Proposta Aprovada'),
+        ]
 
     def __str__(self):
         return f'Proposta {self.pk}'
@@ -42,3 +46,6 @@ class Proposta(models.Model):
     @property
     def cliente(self):
         return self.beneficio.cliente
+
+
+FINAIS = {Proposta.Status.FORMALIZADA, Proposta.Status.RECUSADA, Proposta.Status.CANCELADA}

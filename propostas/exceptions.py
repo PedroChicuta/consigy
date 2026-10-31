@@ -44,3 +44,17 @@ class MargemAntigaSemConfirmacao(ErroDeNegocio):
 class PropostaTravada(ErroDeNegocio):
     def __init__(self):
         super().__init__('Só é possível alterar as condições de uma Proposta Digitada.')
+
+
+class TransicaoInvalida(ErroDeNegocio):
+    pass
+
+
+class MotivoObrigatorio(ErroDeNegocio):
+    def __init__(self):
+        super().__init__('Informe o motivo.')
+
+
+class CancelamentoSemPermissao(ErroDeNegocio):
+    def __init__(self):
+        super().__init__('Só o Supervisor pode cancelar uma Proposta Aprovada.')

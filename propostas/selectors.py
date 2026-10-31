@@ -27,3 +27,16 @@ def listar_propostas(*, status='', banco=None, cliente=''):
 
 def propostas_do_cliente(*, cliente):
     return _base().filter(beneficio__cliente=cliente)
+
+
+def historico_da_proposta(*, proposta):
+    """Mudanças de status, da mais nova à mais antiga, com autor e data."""
+    registros = list(
+        proposta.history.select_related('history_user').order_by('-history_date', '-pk')
+    )
+    resultado = []
+    for i, registro in enumerate(registros):
+        anterior = registros[i + 1] if i + 1 < len(registros) else None
+        if anterior is None or anterior.status != registro.status:
+            resultado.append(registro)
+    return resultado

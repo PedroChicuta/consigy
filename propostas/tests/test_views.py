@@ -123,3 +123,30 @@ def test_ficha_do_cliente_mostra_propostas(client, operador):
     resposta = client.get(reverse('clientes:detalhe', args=[proposta.cliente.pk]))
 
     assert reverse('propostas:detalhe', args=[proposta.pk]) in resposta.content.decode()
+
+
+def test_operador_acompanha_e_cancela(client, operador):
+    proposta = PropostaFactory(status=Proposta.Status.ENVIADA)
+
+    client.post(reverse('propostas:avancar', args=[proposta.pk, 'em_analise']))
+    client.post(reverse('propostas:cancelar', args=[proposta.pk]), {'motivo': 'Desistiu'})
+
+    proposta.refresh_from_db()
+    assert proposta.status == Proposta.Status.CANCELADA
+    conteudo = client.get(reverse('propostas:detalhe', args=[proposta.pk])).content.decode()
+    assert 'Desistiu' in conteudo
+    assert 'Histórico de status' not in conteudo
+
+
+def test_supervisor_ve_historico_e_cancela_aprovada(client, db):
+    supervisor = get_user_model().objects.create_user(username='sup', password='x')
+    supervisor.groups.add(Group.objects.get(name='Supervisor'))
+    client.force_login(supervisor)
+    proposta = PropostaFactory(status=Proposta.Status.APROVADA)
+
+    client.post(reverse('propostas:cancelar', args=[proposta.pk]), {'motivo': 'Desistiu'})
+
+    proposta.refresh_from_db()
+    assert proposta.status == Proposta.Status.CANCELADA
+    conteudo = client.get(reverse('propostas:detalhe', args=[proposta.pk])).content.decode()
+    assert 'Histórico de status' in conteudo
