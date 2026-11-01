@@ -30,6 +30,15 @@ def test_tela_de_login_e_publica_e_em_portugues(client):
     assert 'Entrar' in resposta.content.decode()
 
 
+def test_autenticado_em_entrar_e_redirecionado(client, operador):
+    client.force_login(operador)
+
+    resposta = client.get(reverse('accounts:login'))
+
+    assert resposta.status_code == 302
+    assert resposta.url == reverse('inicio:index')
+
+
 def test_login_valido_entra(client, operador):
     resposta = client.post(reverse('accounts:login'), {'username': 'maria', 'password': SENHA})
 
