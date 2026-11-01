@@ -18,22 +18,15 @@
 
 <section class="mb-5">
   <h2 class="h5">Formulário</h2>
-  <form class="row g-3" onsubmit="return false">
-    <div class="col-md-6">
-      <label class="form-label" for="d-nome">Nome</label>
-      <input class="form-control" id="d-nome" type="text" placeholder="Maria da Silva">
+  <p class="text-body-secondary">Renderizado pelo padrão do projeto (<code>{% templatetag openvariable %} form {% templatetag closevariable %}</code>, ADR 0010).</p>
+  <div class="row g-4">
+    <div class="col-lg-6">
+      {% include 'formularios/_cartao.html' with form=form_exemplo acao='#' titulo='Formulário' rotulo='Salvar' %}
     </div>
-    <div class="col-md-6">
-      <label class="form-label" for="d-banco">Banco</label>
-      <select class="form-select" id="d-banco"><option>Banco A</option><option>Banco B</option></select>
+    <div class="col-lg-6">
+      {% include 'formularios/_cartao.html' with form=form_com_erros acao='#' titulo='Com erros de validação' rotulo='Salvar' %}
     </div>
-    <div class="col-12">
-      <div class="form-check">
-        <input class="form-check-input" id="d-ok" type="checkbox" checked>
-        <label class="form-check-label" for="d-ok">Confirmo os dados</label>
-      </div>
-    </div>
-  </form>
+  </div>
 </section>
 
 <section class="mb-5">

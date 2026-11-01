@@ -24,19 +24,10 @@
   </dl>
 
   {% if beneficio.ativo and perms.beneficios.add_margem %}
-    <h2 class="h5 mt-4">Registrar Margem</h2>
-    <form method="post" action="{% url 'beneficios:registrar_margem' beneficio.pk %}" novalidate>
-      {% csrf_token %}
-      {% for erro in form.non_field_errors %}<div class="text-danger small mb-2">{{ erro }}</div>{% endfor %}
-      {% for campo in form %}
-        <div class="mb-3">
-          <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
-          {{ campo }}
-          {% for erro in campo.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
-        </div>
-      {% endfor %}
-      <button class="btn btn-primary" type="submit">Registrar</button>
-    </form>
+    <div class="formulario mt-4">
+      {% url 'beneficios:registrar_margem' beneficio.pk as acao %}
+      {% include 'formularios/_cartao.html' with form=form acao=acao titulo='Registrar Margem' rotulo='Registrar' %}
+    </div>
   {% endif %}
 
   <h2 class="h5 mt-4">Histórico de Margens</h2>

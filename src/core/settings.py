@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.forms',
     'corsheaders',
     'django_htmx',
     'simple_history',
@@ -79,6 +80,9 @@ LOGIN_REDIRECT_URL = 'inicio:index'
 LOGOUT_REDIRECT_URL = 'accounts:login'
 
 ROOT_URLCONF = 'core.urls'
+
+# Formulários renderizam no padrão Bootstrap do projeto (ADR 0010).
+FORM_RENDERER = 'core.formularios.RendererBootstrap'
 
 TEMPLATES = [
     {

@@ -49,7 +49,9 @@ class DetalheView(PermissaoNecessariaMixin, View):
         if request.user.has_perm('contratos.view_historicalcontrato'):
             historico = selectors.historico_do_contrato(contrato=contrato)
         return render(
-            request, 'contratos/detalhe.html', {'contrato': contrato, 'historico': historico}
+            request,
+            'contratos/detalhe.html',
+            {'contrato': contrato, 'historico': historico, 'form_cancelar': MotivoForm()},
         )
 
 

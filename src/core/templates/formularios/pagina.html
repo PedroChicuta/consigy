@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% comment %}
+  Página de formulário (ADR 0010). Blocos: `titulo` (aba), `titulo_formulario`,
+  `descricao_formulario` (opcional), `url_cancelar` e `rotulo_enviar` (padrão "Salvar").
+{% endcomment %}
+
+{% block conteudo %}
+  <div class="formulario">
+    <header class="mb-4">
+      <h1 class="h3 mb-1">{% block titulo_formulario %}{% endblock %}</h1>
+      {% block descricao_formulario %}{% endblock %}
+    </header>
+    <form method="post" novalidate class="card shadow-sm">
+      {% csrf_token %}
+      <div class="card-body p-4">{{ form }}</div>
+      <div class="card-footer formulario-acoes">
+        <a class="btn btn-link link-body-emphasis text-decoration-none" href="{% block url_cancelar %}{% endblock %}">Cancelar</a>
+        <button class="btn btn-primary" type="submit">{% block rotulo_enviar %}Salvar{% endblock %}</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

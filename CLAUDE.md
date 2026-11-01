@@ -21,6 +21,7 @@ Projeto Django 6.1 (Python 3.14) para o domínio de crédito consignado. O códi
 ## Convenções
 
 - Código e comentários em português quando houver texto de domínio; mantenha o estilo do `settings.py` (aspas simples).
+- Formulários: renderize com `{{ form }}` (renderer global `core.formularios.RendererBootstrap`); não declare classes CSS nos `forms.py`. Páginas de formulário estendem `formularios/pagina.html`; formulários curtos embutidos usam `formularios/_cartao.html` (ADR 0010).
 - Novos apps: em `src/`, `python manage.py startapp <nome>` e registrar em `INSTALLED_APPS`.
 
 ## ADRs

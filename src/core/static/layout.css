@@ -166,3 +166,27 @@
     transition: none;
   }
 }
+
+/* Formulários (ADR 0010) */
+.formulario {
+  max-width: 52rem;
+}
+
+.formulario-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--bs-tertiary-bg);
+}
+
+.formulario .formulario-acoes {
+  padding-inline: 1.5rem;
+}
+
+.rotulo-opcional {
+  color: var(--bs-secondary-color);
+  font-size: 0.875em;
+  font-weight: 400;
+}

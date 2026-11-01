@@ -47,30 +47,27 @@
     {% include 'contratos/partials/_linhas.html' %}
   {% endif %}
 
-  <h2 class="h5">Observações</h2>
   {% if perms.propostas.change_proposta %}
-    <form method="post" action="{% url 'propostas:observacoes' proposta.pk %}" class="mb-3">
-      {% csrf_token %}
-      {{ form_observacoes.observacoes }}
-      <button class="btn btn-sm btn-outline-primary mt-2" type="submit">Salvar observações</button>
-    </form>
+    <div class="formulario mb-4">
+      {% url 'propostas:observacoes' proposta.pk as acao %}
+      {% include 'formularios/_cartao.html' with form=form_observacoes acao=acao rotulo='Salvar observações' estilo_botao='btn-outline-primary' %}
+    </div>
   {% else %}
+    <h2 class="h5">Observações</h2>
     <p>{{ proposta.observacoes|default:'—'|linebreaksbr }}</p>
   {% endif %}
   {% if not proposta.encerrada and perms.propostas.change_proposta %}
     {% if proposta.status != 'aprovada' or perms.propostas.cancelar_proposta_aprovada %}
       <h2 class="h5">Encerrar</h2>
-      <div class="row g-2 mb-3">
-        <form method="post" action="{% url 'propostas:recusar' proposta.pk %}" class="col-md-6">
-          {% csrf_token %}
-          <input class="form-control mb-1" name="motivo" placeholder="Motivo" required>
-          <button class="btn btn-sm btn-outline-danger" type="submit">Recusar</button>
-        </form>
-        <form method="post" action="{% url 'propostas:cancelar' proposta.pk %}" class="col-md-6">
-          {% csrf_token %}
-          <input class="form-control mb-1" name="motivo" placeholder="Motivo" required>
-          <button class="btn btn-sm btn-outline-secondary" type="submit">Cancelar</button>
-        </form>
+      <div class="formulario row g-3 mb-4">
+        <div class="col-md-6">
+          {% url 'propostas:recusar' proposta.pk as acao %}
+          {% include 'formularios/_cartao.html' with form=form_recusar acao=acao titulo='Recusada pelo Banco' rotulo='Recusar Proposta' estilo_botao='btn-outline-danger' validar_no_navegador=True %}
+        </div>
+        <div class="col-md-6">
+          {% url 'propostas:cancelar' proposta.pk as acao %}
+          {% include 'formularios/_cartao.html' with form=form_cancelar acao=acao titulo='Desistência' rotulo='Cancelar Proposta' estilo_botao='btn-outline-danger' validar_no_navegador=True %}
+        </div>
       </div>
     {% endif %}
   {% endif %}

@@ -1,19 +1,5 @@
-{% extends 'base.html' %}
+{% extends 'formularios/pagina.html' %}
 
 {% block titulo %}{% if cliente %}Editar Cliente{% else %}Novo Cliente{% endif %} · Consignado{% endblock %}
-
-{% block conteudo %}
-  <h1 class="h3">{% if cliente %}Editar {{ cliente.nome }}{% else %}Novo Cliente{% endif %}</h1>
-  <form method="post" novalidate>
-    {% csrf_token %}
-    {% for campo in form %}
-      <div class="mb-3">
-        <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
-        {{ campo }}
-        {% for erro in campo.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
-      </div>
-    {% endfor %}
-    <button class="btn btn-primary" type="submit">Salvar</button>
-    <a class="btn btn-secondary" href="{% if cliente %}{% url 'clientes:detalhe' cliente.pk %}{% else %}{% url 'clientes:lista' %}{% endif %}">Cancelar</a>
-  </form>
-{% endblock %}
+{% block titulo_formulario %}{% if cliente %}Editar {{ cliente.nome }}{% else %}Novo Cliente{% endif %}{% endblock %}
+{% block url_cancelar %}{% if cliente %}{% url 'clientes:detalhe' cliente.pk %}{% else %}{% url 'clientes:lista' %}{% endif %}{% endblock %}

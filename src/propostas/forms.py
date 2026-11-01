@@ -11,8 +11,12 @@ class _BeneficioChoiceField(forms.ModelChoiceField):
 
 
 class PropostaForm(forms.Form):
-    beneficio = _BeneficioChoiceField(queryset=Beneficio.objects.none(), label='Benefício')
-    banco = forms.ModelChoiceField(queryset=Banco.objects.none(), label='Banco')
+    beneficio = _BeneficioChoiceField(
+        queryset=Beneficio.objects.none(), label='Benefício', empty_label='Selecione o Benefício'
+    )
+    banco = forms.ModelChoiceField(
+        queryset=Banco.objects.none(), label='Banco', empty_label='Selecione o Banco'
+    )
     valor = forms.DecimalField(label='Valor (R$)', max_digits=12, decimal_places=2)
     prazo = forms.IntegerField(label='Prazo (meses)', min_value=1, max_value=32767)
     parcela = forms.DecimalField(label='Parcela (R$)', max_digits=10, decimal_places=2)
@@ -32,17 +36,13 @@ class PropostaForm(forms.Form):
             filtro_beneficio
         )
         self.fields['banco'].queryset = Banco.objects.filter(filtro_banco)
-        for nome, campo in self.fields.items():
-            campo.widget.attrs['class'] = (
-                'form-select' if nome in ('beneficio', 'banco') else 'form-control'
-            )
 
 
 class ObservacoesForm(forms.Form):
     observacoes = forms.CharField(
         label='Observações',
         required=False,
-        widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+        widget=forms.Textarea(attrs={'rows': 3}),
     )
 
 
