@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block titulo %}Design system{% endblock %}
+{% block conteudo %}
+<h1 class="h3 mb-4">Design system</h1>
+
+<section class="mb-5">
+  <h2 class="h5">Botões</h2>
+  <div class="d-flex flex-wrap gap-2">
+    <button class="btn btn-primary" type="button">Primário</button>
+    <button class="btn btn-secondary" type="button">Secundário</button>
+    <button class="btn btn-success" type="button">Sucesso</button>
+    <button class="btn btn-danger" type="button">Perigo</button>
+    <button class="btn btn-warning" type="button">Aviso</button>
+    <button class="btn btn-outline-primary" type="button">Contorno</button>
+    <a class="btn btn-link" href="#">Link</a>
+  </div>
+</section>
+
+<section class="mb-5">
+  <h2 class="h5">Formulário</h2>
+  <form class="row g-3" onsubmit="return false">
+    <div class="col-md-6">
+      <label class="form-label" for="d-nome">Nome</label>
+      <input class="form-control" id="d-nome" type="text" placeholder="Maria da Silva">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label" for="d-banco">Banco</label>
+      <select class="form-select" id="d-banco"><option>Banco A</option><option>Banco B</option></select>
+    </div>
+    <div class="col-12">
+      <div class="form-check">
+        <input class="form-check-input" id="d-ok" type="checkbox" checked>
+        <label class="form-check-label" for="d-ok">Confirmo os dados</label>
+      </div>
+    </div>
+  </form>
+</section>
+
+<section class="mb-5">
+  <h2 class="h5">Tabela</h2>
+  <table class="table table-striped">
+    <thead><tr><th>Proposta</th><th>Cliente</th><th>Estado</th></tr></thead>
+    <tbody>
+      <tr><td>1001</td><td>Maria</td><td><span class="badge text-bg-success">Aprovada</span></td></tr>
+      <tr><td>1002</td><td>João</td><td><span class="badge text-bg-danger">Recusada</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="mb-5">
+  <h2 class="h5">Alertas</h2>
+  <div class="alert alert-success" role="alert">Sucesso: operação concluída.</div>
+  <div class="alert alert-danger" role="alert">Perigo: algo deu errado.</div>
+  <div class="alert alert-warning" role="alert">Aviso: confira os dados.</div>
+  <div class="alert alert-info" role="alert">Informação: nota para o operador.</div>
+</section>
+
+<section class="mb-5">
+  <h2 class="h5">Badges de status</h2>
+  <div class="d-flex flex-wrap gap-2">
+    <span class="badge text-bg-secondary">Em análise</span>
+    <span class="badge text-bg-success">Aprovada</span>
+    <span class="badge text-bg-primary">Formalizada</span>
+    <span class="badge text-bg-danger">Recusada</span>
+    <span class="badge text-bg-warning">Pendente</span>
+    <span class="badge text-bg-success">Averbado</span>
+    <span class="badge text-bg-primary">Pago</span>
+  </div>
+</section>
+
+<section class="mb-5">
+  <h2 class="h5">Cards</h2>
+  <div class="card" style="max-width: 24rem">
+    <div class="card-body">
+      <h3 class="card-title h6">Contrato 2001</h3>
+      <p class="card-text">Texto de exemplo sobre o fundo do card.</p>
+      <a class="btn btn-primary" href="#">Abrir</a>
+    </div>
+  </div>
+</section>
+
+<section class="mb-5">
+  <h2 class="h5">Paginação</h2>
+  <nav aria-label="Paginação de exemplo">
+    <ul class="pagination">
+      <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+      <li class="page-item active" aria-current="page"><span class="page-link">1</span></li>
+      <li class="page-item"><a class="page-link" href="#">2</a></li>
+      <li class="page-item"><a class="page-link" href="#">Próxima</a></li>
+    </ul>
+  </nav>
+</section>
+{% endblock %}
