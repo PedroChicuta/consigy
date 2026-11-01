@@ -1,7 +1,7 @@
 from django.db import models
 from simple_history.models import HistoricalRecords
 
-from propostas.models import Proposta
+from propostas.models import Modalidade, Proposta
 
 
 class Contrato(models.Model):
@@ -15,11 +15,14 @@ class Contrato(models.Model):
         CANCELADO = 'cancelado', 'Cancelado'
 
     proposta = models.OneToOneField(Proposta, on_delete=models.PROTECT, related_name='contrato')
+    modalidade = models.ForeignKey(Modalidade, on_delete=models.PROTECT, related_name='contratos')
     status = models.CharField(max_length=20, choices=Status, default=Status.FORMALIZADO)
     valor = models.DecimalField('valor (R$)', max_digits=12, decimal_places=2)
+    valor_liberado = models.DecimalField('valor liberado (R$)', max_digits=12, decimal_places=2)
     prazo = models.PositiveSmallIntegerField('prazo (meses)')
     parcela = models.DecimalField('parcela (R$)', max_digits=10, decimal_places=2)
     taxa = models.DecimalField('taxa (% a.m.)', max_digits=6, decimal_places=4)
+    data_pagamento = models.DateField('data de pagamento', null=True, blank=True)
     motivo = models.TextField('motivo do cancelamento', blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 

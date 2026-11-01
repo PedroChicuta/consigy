@@ -21,7 +21,11 @@
     {% endif %}
     {% if proposta.status == 'enviada' and perms.propostas.change_proposta %}
       <form method="post" action="{% url 'propostas:avancar' proposta.pk 'em_analise' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Marcar Em análise</button></form>
-    {% elif proposta.status == 'em_analise' and perms.propostas.change_proposta %}
+    {% elif proposta.status == 'em_analise' and perms.propostas.change_proposta and proposta.modalidade.envolve_portabilidade %}
+      <form method="post" action="{% url 'propostas:avancar' proposta.pk 'aguardando_saldo' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Marcar Aguardando saldo</button></form>
+    {% elif proposta.status == 'aguardando_saldo' and perms.propostas.change_proposta %}
+      <form method="post" action="{% url 'propostas:avancar' proposta.pk 'portabilidade_autorizada' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Marcar Portabilidade autorizada</button></form>
+    {% elif proposta.status == 'em_analise' and perms.propostas.change_proposta or proposta.status == 'portabilidade_autorizada' and perms.propostas.change_proposta %}
       <form method="post" action="{% url 'propostas:avancar' proposta.pk 'aprovada' %}">{% csrf_token %}<button class="btn btn-success" type="submit">Marcar Aprovada</button></form>
     {% elif proposta.status == 'aprovada' and perms.propostas.change_proposta %}
       <form method="post" action="{% url 'propostas:formalizar' proposta.pk %}">{% csrf_token %}<button class="btn btn-success" type="submit">Formalizar</button></form>
@@ -33,7 +37,9 @@
     <dt class="col-sm-3">Benefício</dt>
     <dd class="col-sm-9"><a href="{% url 'beneficios:detalhe' proposta.beneficio.pk %}">{{ proposta.beneficio.numero }}</a></dd>
     <dt class="col-sm-3">Banco</dt><dd class="col-sm-9">{{ proposta.banco.nome }}</dd>
+    <dt class="col-sm-3">Modalidade</dt><dd class="col-sm-9">{{ proposta.modalidade.nome }}</dd>
     <dt class="col-sm-3">Valor</dt><dd class="col-sm-9">R$ {{ proposta.valor }}</dd>
+    <dt class="col-sm-3">Valor liberado</dt><dd class="col-sm-9">R$ {{ proposta.valor_liberado }}</dd>
     <dt class="col-sm-3">Prazo</dt><dd class="col-sm-9">{{ proposta.prazo }} meses</dd>
     <dt class="col-sm-3">Parcela</dt><dd class="col-sm-9">R$ {{ proposta.parcela }}</dd>
     <dt class="col-sm-3">Taxa</dt><dd class="col-sm-9">{{ proposta.taxa }}% a.m.</dd>

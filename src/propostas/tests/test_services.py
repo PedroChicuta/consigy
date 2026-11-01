@@ -21,10 +21,11 @@ from propostas.exceptions import (
     TransicaoInvalida,
 )
 from propostas.models import Proposta
-from propostas.tests.factories import PropostaFactory, UsuarioFactory
+from propostas.tests.factories import ModalidadeFactory, PropostaFactory, UsuarioFactory
 
 CONDICOES = {
     'valor': Decimal('12000.00'),
+    'valor_liberado': Decimal('11000.00'),
     'prazo': 72,
     'parcela': Decimal('300.00'),
     'taxa': Decimal('1.7000'),
@@ -44,6 +45,7 @@ def test_cria_proposta_digitada_com_operador_e_historico(usuario):
         beneficio=beneficio,
         banco=banco,
         observacoes='Cliente com pressa',
+        modalidade=ModalidadeFactory(),
         **CONDICOES,
     )
 
@@ -62,6 +64,7 @@ def test_nao_cria_com_banco_inativo(usuario):
             usuario=usuario,
             beneficio=BeneficioFactory(),
             banco=BancoFactory(ativo=False),
+            modalidade=ModalidadeFactory(),
             **CONDICOES,
         )
     assert not Proposta.objects.exists()
@@ -73,6 +76,7 @@ def test_nao_cria_com_beneficio_inativo(usuario):
             usuario=usuario,
             beneficio=BeneficioFactory(ativo=False),
             banco=BancoFactory(),
+            modalidade=ModalidadeFactory(),
             **CONDICOES,
         )
     assert not Proposta.objects.exists()
@@ -82,6 +86,8 @@ def test_nao_cria_com_beneficio_inativo(usuario):
     'campo, valor',
     [
         ('valor', Decimal('0')),
+        ('valor_liberado', Decimal('0')),
+        ('valor_liberado', Decimal('12000.01')),
         ('prazo', 0),
         ('parcela', Decimal('-1')),
         ('taxa', Decimal('0')),
@@ -93,7 +99,7 @@ def test_condicoes_devem_ser_positivas(usuario, campo, valor):
             usuario=usuario,
             beneficio=BeneficioFactory(),
             banco=BancoFactory(),
-            **{**CONDICOES, campo: valor},
+            **{**CONDICOES, 'modalidade': ModalidadeFactory(), campo: valor},
         )
 
 
@@ -107,6 +113,7 @@ def test_edita_condicoes_enquanto_digitada(usuario):
         beneficio=proposta.beneficio,
         banco=novo_banco,
         observacoes='Ajustada',
+        modalidade=ModalidadeFactory(),
         **CONDICOES,
     )
 
@@ -115,6 +122,31 @@ def test_edita_condicoes_enquanto_digitada(usuario):
     assert proposta.prazo == 72
     assert proposta.observacoes == 'Ajustada'
     assert proposta.history.first().history_user == usuario
+
+
+def test_valor_liberado_igual_ao_valor_e_aceito(usuario):
+    proposta = services.criar_proposta(
+        usuario=usuario,
+        beneficio=BeneficioFactory(),
+        banco=BancoFactory(),
+        **{**CONDICOES, 'modalidade': ModalidadeFactory(), 'valor_liberado': CONDICOES['valor']},
+    )
+
+    assert proposta.valor_liberado == CONDICOES['valor']
+
+
+def test_edicao_rejeita_valor_liberado_acima_do_valor(usuario):
+    proposta = PropostaFactory()
+
+    with pytest.raises(CondicoesInvalidas, match='valor liberado'):
+        services.editar_proposta(
+            usuario=usuario,
+            proposta=proposta,
+            beneficio=proposta.beneficio,
+            banco=proposta.banco,
+            modalidade=proposta.modalidade,
+            **{**CONDICOES, 'valor_liberado': CONDICOES['valor'] + 1},
+        )
 
 
 def test_edicao_nao_troca_para_banco_inativo(usuario):
@@ -127,6 +159,7 @@ def test_edicao_nao_troca_para_banco_inativo(usuario):
             beneficio=proposta.beneficio,
             banco=BancoFactory(ativo=False),
             observacoes='',
+            modalidade=ModalidadeFactory(),
             **CONDICOES,
         )
 
@@ -142,6 +175,7 @@ def test_edicao_mantem_banco_que_ficou_inativo(usuario):
         beneficio=proposta.beneficio,
         banco=proposta.banco,
         observacoes='',
+        modalidade=ModalidadeFactory(),
         **CONDICOES,
     )
 
@@ -159,6 +193,7 @@ def test_condicoes_travadas_fora_de_digitada(usuario):
             beneficio=proposta.beneficio,
             banco=proposta.banco,
             observacoes='',
+            modalidade=ModalidadeFactory(),
             **CONDICOES,
         )
 
@@ -273,7 +308,12 @@ def test_enviada_trava_condicoes_mas_aceita_observacoes(usuario):
             proposta=proposta,
             beneficio=proposta.beneficio,
             banco=proposta.banco,
-            **{**CONDICOES, 'valor': Decimal('1.00')},
+            **{
+                **CONDICOES,
+                'modalidade': ModalidadeFactory(),
+                'valor': Decimal('1.00'),
+                'valor_liberado': Decimal('1.00'),
+            },
         )
     services.editar_observacoes(usuario=usuario, proposta=proposta, observacoes='ok')
     proposta.refresh_from_db()

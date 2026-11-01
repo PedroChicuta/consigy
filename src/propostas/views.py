@@ -10,7 +10,7 @@ from core.exceptions import ErroDeNegocio
 from propostas import selectors, services
 from propostas.exceptions import MargemAntigaSemConfirmacao
 from propostas.forms import MotivoForm, ObservacoesForm, PropostaForm
-from propostas.models import Proposta
+from propostas.models import Modalidade, Proposta
 
 POR_PAGINA = 25
 
@@ -28,12 +28,17 @@ class ListaView(PermissaoNecessariaMixin, View):
             status = ''
         banco = _pk_ou_vazio(request.GET.get('banco', ''))
         cliente = request.GET.get('cliente', '').strip()
-        propostas = selectors.listar_propostas(status=status, banco=banco, cliente=cliente)
+        modalidade = _pk_ou_vazio(request.GET.get('modalidade', ''))
+        propostas = selectors.listar_propostas(
+            status=status, banco=banco, cliente=cliente, modalidade=modalidade
+        )
         pagina = Paginator(propostas, POR_PAGINA).get_page(request.GET.get('page'))
         contexto = {
             'pagina': pagina,
             'status': status,
             'banco': banco,
+            'modalidade': modalidade,
+            'modalidades': Modalidade.objects.all(),
             'cliente': cliente,
             'status_opcoes': Proposta.Status.choices,
             'bancos': bancos_selectors.listar_bancos(),
@@ -69,7 +74,8 @@ class CriarView(PermissaoNecessariaMixin, View):
 
 def _buscar(pk):
     return get_object_or_404(
-        Proposta.objects.select_related('beneficio__cliente', 'banco', 'operador'), pk=pk
+        Proposta.objects.select_related('beneficio__cliente', 'banco', 'modalidade', 'operador'),
+        pk=pk,
     )
 
 
@@ -131,7 +137,9 @@ class EditarView(PermissaoNecessariaMixin, View):
         return {
             'beneficio': proposta.beneficio_id,
             'banco': proposta.banco_id,
+            'modalidade': proposta.modalidade_id,
             'valor': proposta.valor,
+            'valor_liberado': proposta.valor_liberado,
             'prazo': proposta.prazo,
             'parcela': proposta.parcela,
             'taxa': proposta.taxa,

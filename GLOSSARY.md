@@ -28,10 +28,18 @@ _Avoid_: Financeira, credor
 Valor máximo da renda mensal de um Benefício que pode ser comprometido com parcelas. É digitada pelo Operador junto com a data da consulta.
 _Avoid_: Limite, saldo
 
+**Modalidade**:
+Tipo de operação de crédito de uma Proposta, como consignado novo, portabilidade com refinanciamento ou cartão com saque. É um cadastro mantido pelo Supervisor e acompanha a Proposta até o Contrato.
+_Avoid_: Tipo de contrato, produto
+
 **Proposta**:
-Pedido de empréstimo consignado novo, feito sobre um Benefício e enviado a um Banco, com as condições que o Banco ofereceu (valor, prazo, parcela, taxa). Passa por Digitada, Enviada ao Banco, Em análise, Aprovada e Formalizada, ou termina Recusada (pelo Banco) ou Cancelada (por desistência).
+Pedido de crédito consignado de uma Modalidade, feito sobre um Benefício e enviado a um Banco, com as condições que o Banco ofereceu (valor do crédito, valor liberado, prazo, parcela, taxa). Passa por Digitada, Enviada ao Banco, Em análise, Aprovada e Formalizada, ou termina Recusada (pelo Banco) ou Cancelada (por desistência).
 _Avoid_: Pedido, solicitação, simulação
 
+**Valor liberado**:
+Parte do crédito que o Cliente de fato recebe, digitada pelo Operador conforme a oferta do Banco. Pode ser menor que o valor do crédito, por exemplo quando parte dele quita um contrato anterior.
+_Avoid_: Troco, líquido
+
 **Contrato**:
-Empréstimo efetivado, nascido de uma única Proposta Formalizada. Passa por Averbado (o INSS confirmou o desconto), Pago (o Banco liberou o dinheiro ao Cliente) e Quitado, ou termina Cancelado se a averbação ou o pagamento falha.
+Empréstimo efetivado, nascido de uma única Proposta Formalizada. Passa por Averbado (o INSS confirmou o desconto), Pago (o Banco liberou o dinheiro ao Cliente, na data de pagamento informada pelo Operador) e Quitado, ou termina Cancelado se a averbação ou o pagamento falha.
 _Avoid_: Empréstimo, operação

@@ -1,7 +1,10 @@
+from datetime import timedelta
+
 import pytest
+from django.utils import timezone
 
 from contratos import selectors, services
-from contratos.exceptions import MotivoObrigatorio, TransicaoInvalida
+from contratos.exceptions import DataPagamentoInvalida, MotivoObrigatorio, TransicaoInvalida
 from contratos.models import Contrato
 from contratos.tests.factories import ContratoFactory
 from propostas.tests.factories import UsuarioFactory
@@ -14,10 +17,62 @@ def test_avanca_na_ordem_ate_quitar():
     usuario = UsuarioFactory()
     contrato = ContratoFactory()
 
+    hoje = timezone.localdate()
     for etapa in (S.AVERBADO, S.PAGO, S.QUITADO):
-        services.avancar_contrato(usuario=usuario, contrato=contrato, status=etapa)
+        services.avancar_contrato(
+            usuario=usuario, contrato=contrato, status=etapa, data_pagamento=hoje
+        )
         contrato.refresh_from_db()
         assert contrato.status == etapa
+    assert contrato.data_pagamento == hoje
+
+
+@pytest.mark.django_db
+def test_marcar_pago_sem_data_e_rejeitado():
+    contrato = ContratoFactory(status=S.AVERBADO)
+
+    with pytest.raises(DataPagamentoInvalida, match='Informe a data'):
+        services.avancar_contrato(usuario=UsuarioFactory(), contrato=contrato, status=S.PAGO)
+
+    contrato.refresh_from_db()
+    assert contrato.status == S.AVERBADO
+
+
+@pytest.mark.django_db
+def test_marcar_pago_com_data_futura_e_rejeitado():
+    contrato = ContratoFactory(status=S.AVERBADO)
+    amanha = timezone.localdate() + timedelta(days=1)
+
+    with pytest.raises(DataPagamentoInvalida, match='futura'):
+        services.avancar_contrato(
+            usuario=UsuarioFactory(), contrato=contrato, status=S.PAGO, data_pagamento=amanha
+        )
+
+
+@pytest.mark.django_db
+def test_marcar_pago_aceita_data_passada():
+    contrato = ContratoFactory(status=S.AVERBADO)
+    ontem = timezone.localdate() - timedelta(days=1)
+
+    services.avancar_contrato(
+        usuario=UsuarioFactory(), contrato=contrato, status=S.PAGO, data_pagamento=ontem
+    )
+
+    contrato.refresh_from_db()
+    assert contrato.data_pagamento == ontem
+
+
+@pytest.mark.django_db
+def test_filtro_por_periodo_de_pagamento_ignora_sem_data():
+    hoje = timezone.localdate()
+    dentro = ContratoFactory(status=S.PAGO, data_pagamento=hoje)
+    ContratoFactory(status=S.PAGO, data_pagamento=hoje - timedelta(days=30))
+    ContratoFactory(status=S.PAGO)  # antigo, sem data
+
+    achados = selectors.listar_contratos(pago_de=hoje - timedelta(days=5), pago_ate=hoje)
+
+    assert list(achados) == [dentro]
+    assert selectors.listar_contratos().count() == 3
 
 
 @pytest.mark.django_db

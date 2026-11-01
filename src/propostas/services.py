@@ -9,6 +9,7 @@ from propostas.exceptions import (
     CancelamentoSemPermissao,
     CondicoesInvalidas,
     MargemAntigaSemConfirmacao,
+    ModalidadeInativa,
     MotivoObrigatorio,
     ParcelaAcimaDaMargem,
     PropostaNaoDigitada,
@@ -30,25 +31,47 @@ def _salvar(proposta, *, usuario):
     proposta.save()
 
 
-def _validar_condicoes(*, valor, prazo, parcela, taxa):
+def _validar_condicoes(*, valor, valor_liberado, prazo, parcela, taxa):
     informados = {'valor': valor, 'prazo': prazo, 'parcela': parcela, 'taxa': taxa}
     for campo, rotulo in CAMPOS_POSITIVOS.items():
         if informados[campo] <= 0:
             raise CondicoesInvalidas(f'{rotulo} deve ser maior que zero.')
+    if valor_liberado <= 0:
+        raise CondicoesInvalidas('O valor liberado deve ser maior que zero.')
+    if valor_liberado > valor:
+        raise CondicoesInvalidas('O valor liberado não pode ser maior que o valor do crédito.')
 
 
 @transaction.atomic
-def criar_proposta(*, usuario, beneficio, banco, valor, prazo, parcela, taxa, observacoes=''):
+def criar_proposta(
+    *,
+    usuario,
+    beneficio,
+    banco,
+    modalidade,
+    valor,
+    valor_liberado,
+    prazo,
+    parcela,
+    taxa,
+    observacoes='',
+):
     if not beneficio.ativo:
         raise BeneficioInativo
     if not banco.ativo:
         raise BancoInativo
-    _validar_condicoes(valor=valor, prazo=prazo, parcela=parcela, taxa=taxa)
+    if not modalidade.ativo:
+        raise ModalidadeInativa
+    _validar_condicoes(
+        valor=valor, valor_liberado=valor_liberado, prazo=prazo, parcela=parcela, taxa=taxa
+    )
     proposta = Proposta(
         beneficio=beneficio,
         banco=banco,
+        modalidade=modalidade,
         operador=usuario,
         valor=valor,
+        valor_liberado=valor_liberado,
         prazo=prazo,
         parcela=parcela,
         taxa=taxa,
@@ -60,7 +83,18 @@ def criar_proposta(*, usuario, beneficio, banco, valor, prazo, parcela, taxa, ob
 
 @transaction.atomic
 def editar_proposta(
-    *, usuario, proposta, beneficio, banco, valor, prazo, parcela, taxa, observacoes=''
+    *,
+    usuario,
+    proposta,
+    beneficio,
+    banco,
+    modalidade,
+    valor,
+    valor_liberado,
+    prazo,
+    parcela,
+    taxa,
+    observacoes='',
 ):
     """Altera as condições e as observações; só vale enquanto a Proposta está Digitada."""
     if proposta.status != Proposta.Status.DIGITADA:
@@ -71,10 +105,16 @@ def editar_proposta(
         raise BeneficioInativo
     if banco != proposta.banco and not banco.ativo:
         raise BancoInativo
-    _validar_condicoes(valor=valor, prazo=prazo, parcela=parcela, taxa=taxa)
+    if modalidade != proposta.modalidade and not modalidade.ativo:
+        raise ModalidadeInativa
+    _validar_condicoes(
+        valor=valor, valor_liberado=valor_liberado, prazo=prazo, parcela=parcela, taxa=taxa
+    )
     proposta.beneficio = beneficio
     proposta.banco = banco
+    proposta.modalidade = modalidade
     proposta.valor = valor
+    proposta.valor_liberado = valor_liberado
     proposta.prazo = prazo
     proposta.parcela = parcela
     proposta.taxa = taxa
@@ -108,17 +148,24 @@ def editar_observacoes(*, usuario, proposta, observacoes):
     return proposta
 
 
-# Cada etapa só é marcada a partir da anterior.
-ETAPA_ANTERIOR = {
+# Cada etapa só é marcada a partir da anterior; o fluxo depende da Modalidade.
+FLUXO_SIMPLES = {
     Proposta.Status.EM_ANALISE: Proposta.Status.ENVIADA,
     Proposta.Status.APROVADA: Proposta.Status.EM_ANALISE,
+}
+FLUXO_PORTABILIDADE = {
+    Proposta.Status.EM_ANALISE: Proposta.Status.ENVIADA,
+    Proposta.Status.AGUARDANDO_SALDO: Proposta.Status.EM_ANALISE,
+    Proposta.Status.PORTABILIDADE_AUTORIZADA: Proposta.Status.AGUARDANDO_SALDO,
+    Proposta.Status.APROVADA: Proposta.Status.PORTABILIDADE_AUTORIZADA,
 }
 
 
 @transaction.atomic
 def avancar_proposta(*, usuario, proposta, status):
-    """Marca Em análise ou Aprovada, na ordem."""
-    anterior = ETAPA_ANTERIOR.get(status)
+    """Marca a próxima etapa (Em análise até Aprovada), na ordem da Modalidade."""
+    fluxo = FLUXO_PORTABILIDADE if proposta.modalidade.envolve_portabilidade else FLUXO_SIMPLES
+    anterior = fluxo.get(status)
     if anterior is None or proposta.status != anterior:
         raise TransicaoInvalida(
             f'Não é possível marcar essa etapa a partir de {proposta.get_status_display()}.'

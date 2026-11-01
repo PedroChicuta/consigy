@@ -44,10 +44,13 @@ Use as ferramentas do MCP do GitHub (mcp__github__*) no repo ${owner}/${repo}.
 3. Reivindique: issue_write (update) com assignees ["${owner}"].
 4. Rode /implement nessa issue (leia CLAUDE.md, GLOSSARY.md e os ADRs
    relevantes; use /tdd e rode ruff/pytest). Commite na branch atual.
+   Rode TUDO a partir da raiz do repositório, sem 'cd' e sem encadear
+   comandos (só estes são permitidos): .venv/bin/pytest, .venv/bin/ruff
+   check, .venv/bin/python src/manage.py makemigrations|migrate|check.
 5. Só se os testes e o lint passarem: add_issue_comment com o resumo e
    issue_write (update) com state closed e state_reason completed.
    Se não passarem, NÃO feche: remova o assignee (assignees []), comente o
-   motivo na issue e responda apenas FALHOU.
+   motivo na issue e responda apenas 'FALHOU: <motivo em uma linha>'.
 EOF
 
 for i in $(seq 1 "$MAX"); do
@@ -66,8 +69,14 @@ for i in $(seq 1 "$MAX"); do
     echo 'Nenhuma issue elegível restante. Fim.'
     exit 0
   fi
-  if grep -qx 'FALHOU' "$log"; then
-    echo "Iteração $i falhou; veja $log. Parando." >&2
+  if grep -q '^FALHOU' "$log"; then
+    # Guarda o trabalho parcial num stash para a árvore ficar limpa na próxima execução.
+    if [[ -n $(git status --porcelain) ]]; then
+      git stash push --include-untracked -m "ralph: iteração $i falhou ($(date +%F\ %T))" >/dev/null
+      echo 'Trabalho parcial guardado em stash (git stash list / git stash pop).' >&2
+    fi
+    echo "Iteração $i falhou: $(grep -m1 '^FALHOU' "$log")" >&2
+    echo "Log completo: $log. Parando." >&2
     exit 1
   fi
 done
