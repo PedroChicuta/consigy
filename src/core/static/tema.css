@@ -1,0 +1,46 @@
+/* Tema: só cores, sobrescrevendo variáveis do Bootstrap 5.3.3 (sem build). */
+:root,
+[data-bs-theme='light'] {
+  --bs-primary: #14532d;
+  --bs-primary-rgb: 20, 83, 45;
+  --bs-primary-text-emphasis: #0a2916;
+  --bs-primary-bg-subtle: #d0e0d7;
+  --bs-primary-border-subtle: #a1c1b0;
+  --bs-link-color: #14532d;
+  --bs-link-color-rgb: 20, 83, 45;
+  --bs-link-hover-color: #0e3a20;
+  --bs-link-hover-color-rgb: 14, 58, 32;
+  --bs-focus-ring-color: rgba(20, 83, 45, 0.25);
+}
+
+.btn-primary {
+  --bs-btn-bg: #14532d;
+  --bs-btn-border-color: #14532d;
+  --bs-btn-hover-bg: #114626;
+  --bs-btn-hover-border-color: #0f4023;
+  --bs-btn-focus-shadow-rgb: 55, 109, 77;
+  --bs-btn-active-bg: #0f4023;
+  --bs-btn-active-border-color: #0e3b21;
+  --bs-btn-disabled-bg: #14532d;
+  --bs-btn-disabled-border-color: #14532d;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: #14532d;
+  --bs-btn-border-color: #14532d;
+  --bs-btn-hover-bg: #14532d;
+  --bs-btn-hover-border-color: #14532d;
+  --bs-btn-focus-shadow-rgb: 20, 83, 45;
+  --bs-btn-active-bg: #14532d;
+  --bs-btn-active-border-color: #14532d;
+  --bs-btn-disabled-color: #14532d;
+  --bs-btn-disabled-border-color: #14532d;
+}
+
+.navbar.bg-primary-tema {
+  --bs-navbar-color: rgba(255, 255, 255, 0.85);
+  --bs-navbar-hover-color: #fff;
+  --bs-navbar-brand-color: #fff;
+  --bs-navbar-brand-hover-color: #fff;
+  background-color: #14532d;
+}
