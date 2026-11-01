@@ -18,7 +18,7 @@ O ADR-0003 define as camadas (models, services, selectors, views), mas não como
 - **Forms:** validam formato e tipo e entregam dados limpos ao service. A view nunca chama `save()` de form direto.
 - **Selectors:** retornam `QuerySet` ou instâncias, com `select_related`/`prefetch_related` e filtros dentro do selector.
 - **Testes:** pytest-django e factory_boy; services testados contra o banco real, sem mock de ORM; `tests/` por app com `test_services.py`, `test_selectors.py` e `test_views.py` (views só com fluxo feliz e permissões).
-- **HTMX e Bootstrap:** `django-htmx`; templates completos com fragmentos em `templates/<app>/partials/_nome.html`; a mesma view e URL responde com o fragmento quando `request.htmx`. A estilização usa Bootstrap.
+- **HTMX e Bootstrap:** `django-htmx`; templates completos com fragmentos em `<app>/templates/<app>/partials/_nome.html`; a mesma view e URL responde com o fragmento quando `request.htmx`. A estilização usa Bootstrap.
 - **Acesso:** login obrigatório global por middleware; cada view declara a permissão nativa exigida; grupos ("Operador", "Supervisor") criados por migration de dados.
 - **Idioma:** identificadores de domínio em português sem acento (`Cliente`, `criar_cliente`, apps `clientes`); vocabulário técnico em inglês; mensagens ao operador em português com acento.
 
