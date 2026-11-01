@@ -8,7 +8,7 @@ from django.urls import reverse
 from bancos.tests.factories import BancoFactory
 from beneficios.tests.factories import BeneficioFactory, MargemFactory
 from propostas.models import Proposta
-from propostas.tests.factories import PropostaFactory
+from propostas.tests.factories import ModalidadeFactory, PropostaFactory
 
 DADOS = {'valor': '9000.00', 'prazo': '60', 'parcela': '200.00', 'taxa': '1.5000'}
 
@@ -32,7 +32,13 @@ def test_operador_cria_proposta(client, operador):
     beneficio, banco = BeneficioFactory(), BancoFactory()
 
     resposta = client.post(
-        reverse('propostas:criar'), {**DADOS, 'beneficio': beneficio.pk, 'banco': banco.pk}
+        reverse('propostas:criar'),
+        {
+            **DADOS,
+            'beneficio': beneficio.pk,
+            'banco': banco.pk,
+            'modalidade': ModalidadeFactory().pk,
+        },
     )
 
     proposta = Proposta.objects.get()
@@ -45,7 +51,13 @@ def test_banco_inativo_volta_com_erro(client, operador):
     beneficio, banco = BeneficioFactory(), BancoFactory(ativo=False)
 
     resposta = client.post(
-        reverse('propostas:criar'), {**DADOS, 'beneficio': beneficio.pk, 'banco': banco.pk}
+        reverse('propostas:criar'),
+        {
+            **DADOS,
+            'beneficio': beneficio.pk,
+            'banco': banco.pk,
+            'modalidade': ModalidadeFactory().pk,
+        },
     )
 
     assert resposta.status_code == 200
@@ -80,7 +92,12 @@ def test_operador_edita_condicoes_e_observacoes(client, operador):
 
     resposta = client.post(
         reverse('propostas:editar', args=[proposta.pk]),
-        {**DADOS, 'beneficio': proposta.beneficio_id, 'banco': proposta.banco_id},
+        {
+            **DADOS,
+            'beneficio': proposta.beneficio_id,
+            'banco': proposta.banco_id,
+            'modalidade': proposta.modalidade_id,
+        },
     )
     client.post(reverse('propostas:observacoes', args=[proposta.pk]), {'observacoes': 'Nota'})
 

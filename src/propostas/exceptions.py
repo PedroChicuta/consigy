@@ -11,6 +11,11 @@ class BancoInativo(ErroDeNegocio):
         super().__init__('O Banco está inativo; escolha um Banco ativo.')
 
 
+class ModalidadeInativa(ErroDeNegocio):
+    def __init__(self):
+        super().__init__('A Modalidade está inativa; escolha uma Modalidade ativa.')
+
+
 class CondicoesInvalidas(ErroDeNegocio):
     pass
 

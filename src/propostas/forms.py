@@ -3,6 +3,7 @@ from django.db.models import Q
 
 from bancos.models import Banco
 from beneficios.models import Beneficio
+from propostas.models import Modalidade
 
 
 class _BeneficioChoiceField(forms.ModelChoiceField):
@@ -17,6 +18,11 @@ class PropostaForm(forms.Form):
     banco = forms.ModelChoiceField(
         queryset=Banco.objects.none(), label='Banco', empty_label='Selecione o Banco'
     )
+    modalidade = forms.ModelChoiceField(
+        queryset=Modalidade.objects.none(),
+        label='Modalidade',
+        empty_label='Selecione a Modalidade',
+    )
     valor = forms.DecimalField(label='Valor (R$)', max_digits=12, decimal_places=2)
     prazo = forms.IntegerField(label='Prazo (meses)', min_value=1, max_value=32767)
     parcela = forms.DecimalField(label='Parcela (R$)', max_digits=10, decimal_places=2)
@@ -28,7 +34,9 @@ class PropostaForm(forms.Form):
     def __init__(self, *args, proposta=None, **kwargs):
         super().__init__(*args, **kwargs)
         filtro_beneficio, filtro_banco = Q(ativo=True), Q(ativo=True)
+        filtro_modalidade = Q(ativo=True)
         if proposta is not None:
+            filtro_modalidade |= Q(pk=proposta.modalidade_id)
             # Mantém a escolha atual, mesmo que tenha sido inativada depois da digitação.
             filtro_beneficio |= Q(pk=proposta.beneficio_id)
             filtro_banco |= Q(pk=proposta.banco_id)
@@ -36,6 +44,7 @@ class PropostaForm(forms.Form):
             filtro_beneficio
         )
         self.fields['banco'].queryset = Banco.objects.filter(filtro_banco)
+        self.fields['modalidade'].queryset = Modalidade.objects.filter(filtro_modalidade)
 
 
 class ObservacoesForm(forms.Form):

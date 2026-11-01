@@ -5,7 +5,7 @@ from propostas.models import Proposta
 
 
 def _base():
-    return Proposta.objects.select_related('beneficio__cliente', 'banco', 'operador')
+    return Proposta.objects.select_related('beneficio__cliente', 'banco', 'modalidade', 'operador')
 
 
 def listar_propostas(*, status='', banco=None, cliente=''):

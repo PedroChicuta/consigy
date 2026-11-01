@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 
 from bancos.tests.factories import BancoFactory
 from beneficios.tests.factories import BeneficioFactory
-from propostas.models import Proposta
+from propostas.models import Modalidade, Proposta
 
 
 class UsuarioFactory(factory.django.DjangoModelFactory):
@@ -15,12 +15,20 @@ class UsuarioFactory(factory.django.DjangoModelFactory):
     username = factory.Sequence(lambda n: f'operador{n}')
 
 
+class ModalidadeFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Modalidade
+
+    nome = factory.Sequence(lambda n: f'Modalidade {n}')
+
+
 class PropostaFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Proposta
 
     beneficio = factory.SubFactory(BeneficioFactory)
     banco = factory.SubFactory(BancoFactory)
+    modalidade = factory.SubFactory(ModalidadeFactory)
     operador = factory.SubFactory(UsuarioFactory)
     valor = Decimal('10000.00')
     prazo = 84

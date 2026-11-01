@@ -9,6 +9,7 @@ from propostas.exceptions import (
     CancelamentoSemPermissao,
     CondicoesInvalidas,
     MargemAntigaSemConfirmacao,
+    ModalidadeInativa,
     MotivoObrigatorio,
     ParcelaAcimaDaMargem,
     PropostaNaoDigitada,
@@ -38,15 +39,20 @@ def _validar_condicoes(*, valor, prazo, parcela, taxa):
 
 
 @transaction.atomic
-def criar_proposta(*, usuario, beneficio, banco, valor, prazo, parcela, taxa, observacoes=''):
+def criar_proposta(
+    *, usuario, beneficio, banco, modalidade, valor, prazo, parcela, taxa, observacoes=''
+):
     if not beneficio.ativo:
         raise BeneficioInativo
     if not banco.ativo:
         raise BancoInativo
+    if not modalidade.ativo:
+        raise ModalidadeInativa
     _validar_condicoes(valor=valor, prazo=prazo, parcela=parcela, taxa=taxa)
     proposta = Proposta(
         beneficio=beneficio,
         banco=banco,
+        modalidade=modalidade,
         operador=usuario,
         valor=valor,
         prazo=prazo,
@@ -60,7 +66,7 @@ def criar_proposta(*, usuario, beneficio, banco, valor, prazo, parcela, taxa, ob
 
 @transaction.atomic
 def editar_proposta(
-    *, usuario, proposta, beneficio, banco, valor, prazo, parcela, taxa, observacoes=''
+    *, usuario, proposta, beneficio, banco, modalidade, valor, prazo, parcela, taxa, observacoes=''
 ):
     """Altera as condições e as observações; só vale enquanto a Proposta está Digitada."""
     if proposta.status != Proposta.Status.DIGITADA:
@@ -71,9 +77,12 @@ def editar_proposta(
         raise BeneficioInativo
     if banco != proposta.banco and not banco.ativo:
         raise BancoInativo
+    if modalidade != proposta.modalidade and not modalidade.ativo:
+        raise ModalidadeInativa
     _validar_condicoes(valor=valor, prazo=prazo, parcela=parcela, taxa=taxa)
     proposta.beneficio = beneficio
     proposta.banco = banco
+    proposta.modalidade = modalidade
     proposta.valor = valor
     proposta.prazo = prazo
     proposta.parcela = parcela

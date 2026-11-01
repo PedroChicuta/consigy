@@ -69,7 +69,8 @@ class CriarView(PermissaoNecessariaMixin, View):
 
 def _buscar(pk):
     return get_object_or_404(
-        Proposta.objects.select_related('beneficio__cliente', 'banco', 'operador'), pk=pk
+        Proposta.objects.select_related('beneficio__cliente', 'banco', 'modalidade', 'operador'),
+        pk=pk,
     )
 
 
@@ -131,6 +132,7 @@ class EditarView(PermissaoNecessariaMixin, View):
         return {
             'beneficio': proposta.beneficio_id,
             'banco': proposta.banco_id,
+            'modalidade': proposta.modalidade_id,
             'valor': proposta.valor,
             'prazo': proposta.prazo,
             'parcela': proposta.parcela,

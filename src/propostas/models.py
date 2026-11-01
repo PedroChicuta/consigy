@@ -6,6 +6,23 @@ from bancos.models import Banco
 from beneficios.models import Beneficio
 
 
+class Modalidade(models.Model):
+    """Tipo de operação de crédito de uma Proposta; cadastro mantido pelo Supervisor no admin."""
+
+    nome = models.CharField(max_length=100, unique=True)
+    ativo = models.BooleanField(default=True)
+    envolve_portabilidade = models.BooleanField('envolve portabilidade', default=False)
+
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ['nome']
+        verbose_name_plural = 'modalidades'
+
+    def __str__(self):
+        return self.nome
+
+
 class Proposta(models.Model):
     """Pedido de empréstimo consignado novo, feito sobre um Benefício e enviado a um Banco."""
 
@@ -20,6 +37,7 @@ class Proposta(models.Model):
 
     beneficio = models.ForeignKey(Beneficio, on_delete=models.PROTECT, related_name='propostas')
     banco = models.ForeignKey(Banco, on_delete=models.PROTECT, related_name='propostas')
+    modalidade = models.ForeignKey(Modalidade, on_delete=models.PROTECT, related_name='propostas')
     operador = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='propostas'
     )
