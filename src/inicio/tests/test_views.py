@@ -20,10 +20,19 @@ def test_pagina_inicial_usa_layout_base(client_logado):
     assert 'Início' in html
 
 
-def test_requisicao_htmx_devolve_so_o_fragmento(client_logado):
-    resposta = client_logado.get(reverse('inicio:index'), headers={'HX-Request': 'true'})
+def test_saudacao_usa_nome_completo(client, db):
+    user = get_user_model().objects.create_user(
+        username='maria', password='x', first_name='Maria', last_name='Silva'
+    )
+    client.force_login(user)
 
-    assert resposta.status_code == 200
-    html = resposta.content.decode()
-    assert '<html' not in html
-    assert 'id="saudacao"' in html
+    html = client.get(reverse('inicio:index')).content.decode()
+
+    assert 'Olá, Maria Silva!' in html
+    assert 'Atualizar saudação' not in html
+
+
+def test_saudacao_cai_para_username_sem_nome(client_logado):
+    html = client_logado.get(reverse('inicio:index')).content.decode()
+
+    assert 'Olá, maria!' in html

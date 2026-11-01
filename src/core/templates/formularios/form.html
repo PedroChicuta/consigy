@@ -1,0 +1,11 @@
+{% if errors %}
+  <div class="alert alert-danger" role="alert">
+    {% for erro in errors %}<div>{{ erro }}</div>{% endfor %}
+  </div>
+{% endif %}
+{% for campo in hidden_fields %}{{ campo }}{% endfor %}
+<div class="row g-3">
+  {% for campo, erros in fields %}
+    <div class="{% if fields|length == 1 %}col-12{% else %}{{ campo.classe_coluna }}{% endif %}">{{ campo.as_field_group }}</div>
+  {% endfor %}
+</div>

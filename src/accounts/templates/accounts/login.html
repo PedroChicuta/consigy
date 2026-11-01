@@ -3,24 +3,23 @@
 {% block titulo %}Entrar · Consignado{% endblock %}
 
 {% block conteudo %}
-  <div class="row justify-content-center">
-    <div class="col-md-5 col-lg-4">
-      <h1 class="h3 mb-3">Entrar</h1>
-      {% if form.errors %}
-        <div class="alert alert-danger" role="alert">Usuário ou senha incorretos.</div>
-      {% endif %}
-      <form method="post">
+  <div class="row justify-content-center pt-md-5">
+    <div class="col-sm-9 col-md-6 col-lg-4">
+      <form method="post" class="card shadow-sm">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ next }}">
-        <div class="mb-3">
-          <label class="form-label" for="{{ form.username.id_for_label }}">Usuário</label>
-          <input class="form-control" type="text" name="username" id="{{ form.username.id_for_label }}" autofocus required>
+        <div class="card-body p-4">
+          <h1 class="h4 mb-1">Entrar</h1>
+          <p class="text-body-secondary mb-4">Acesse com seu usuário de Operador.</p>
+          {% if form.errors %}
+            <div class="alert alert-danger" role="alert">Usuário ou senha incorretos.</div>
+          {% endif %}
+          <div class="d-grid gap-3">
+            <div>{{ form.username.as_field_group }}</div>
+            <div>{{ form.password.as_field_group }}</div>
+            <button class="btn btn-primary" type="submit">Entrar</button>
+          </div>
         </div>
-        <div class="mb-3">
-          <label class="form-label" for="{{ form.password.id_for_label }}">Senha</label>
-          <input class="form-control" type="password" name="password" id="{{ form.password.id_for_label }}" required>
-        </div>
-        <button class="btn btn-primary w-100" type="submit">Entrar</button>
       </form>
     </div>
   </div>

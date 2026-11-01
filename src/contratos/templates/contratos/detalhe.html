@@ -32,12 +32,10 @@
   </dl>
   {% if perms.contratos.change_contrato %}
     {% if contrato.status == 'formalizado' or contrato.status == 'averbado' %}
-      <h2 class="h5">Cancelar</h2>
-      <form method="post" action="{% url 'contratos:cancelar' contrato.pk %}" class="mb-3">
-        {% csrf_token %}
-        <input class="form-control mb-1" name="motivo" placeholder="Motivo (averbação ou pagamento falhou)" required>
-        <button class="btn btn-sm btn-outline-danger" type="submit">Cancelar Contrato</button>
-      </form>
+      <div class="formulario mb-4">
+        {% url 'contratos:cancelar' contrato.pk as acao %}
+        {% include 'formularios/_cartao.html' with form=form_cancelar acao=acao titulo='Cancelar Contrato' rotulo='Cancelar Contrato' estilo_botao='btn-outline-danger' validar_no_navegador=True %}
+      </div>
     {% endif %}
   {% endif %}
   {% if historico %}

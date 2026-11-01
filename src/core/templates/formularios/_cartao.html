@@ -1,0 +1,13 @@
+{% comment %}
+  Formulário curto embutido em outra página (ADR 0010).
+  Parâmetros: form, acao (URL), rotulo (botão), titulo (opcional),
+  estilo_botao (padrão "btn-primary"), validar_no_navegador (padrão: não).
+{% endcomment %}
+<form method="post" action="{{ acao }}" class="card shadow-sm h-100"{% if not validar_no_navegador %} novalidate{% endif %}>
+  {% csrf_token %}
+  {% if titulo %}<div class="card-header fw-semibold">{{ titulo }}</div>{% endif %}
+  <div class="card-body">{{ form }}</div>
+  <div class="card-footer formulario-acoes">
+    <button class="btn {{ estilo_botao|default:'btn-primary' }}" type="submit">{{ rotulo }}</button>
+  </div>
+</form>

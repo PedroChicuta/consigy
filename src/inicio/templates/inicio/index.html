@@ -4,8 +4,5 @@
 
 {% block conteudo %}
   <h1 class="h3">Início</h1>
-  {% include 'inicio/partials/_saudacao.html' %}
-  <button class="btn btn-primary" hx-get="{% url 'inicio:index' %}" hx-target="#saudacao" hx-swap="outerHTML">
-    Atualizar saudação
-  </button>
+  <p class="lead">Olá, {{ nome_operador }}! Bem-vindo ao sistema.</p>
 {% endblock %}

@@ -1,20 +1,6 @@
-{% extends 'base.html' %}
+{% extends 'formularios/pagina.html' %}
 
 {% block titulo %}Novo Benefício · Consignado{% endblock %}
-
-{% block conteudo %}
-  <h1 class="h3">Novo Benefício de {{ cliente.nome }}</h1>
-  <form method="post" novalidate>
-    {% csrf_token %}
-    {% for erro in form.non_field_errors %}<div class="text-danger small mb-2">{{ erro }}</div>{% endfor %}
-    {% for campo in form %}
-      <div class="mb-3">
-        <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
-        {{ campo }}
-        {% for erro in campo.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
-      </div>
-    {% endfor %}
-    <button class="btn btn-primary" type="submit">Salvar</button>
-    <a class="btn btn-secondary" href="{% url 'clientes:detalhe' cliente.pk %}">Cancelar</a>
-  </form>
-{% endblock %}
+{% block titulo_formulario %}Novo Benefício{% endblock %}
+{% block descricao_formulario %}<p class="text-body-secondary mb-0">Cliente: {{ cliente.nome }}</p>{% endblock %}
+{% block url_cancelar %}{% url 'clientes:detalhe' cliente.pk %}{% endblock %}

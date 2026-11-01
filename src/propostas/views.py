@@ -96,6 +96,8 @@ def _contexto_detalhe(proposta, **extra):
         'proposta': proposta,
         'historico': None,
         'form_observacoes': ObservacoesForm(initial={'observacoes': proposta.observacoes}),
+        'form_recusar': MotivoForm(auto_id='recusar_%s'),
+        'form_cancelar': MotivoForm(auto_id='cancelar_%s'),
         **extra,
     }
 

@@ -1,0 +1,17 @@
+{% if field.widget_type == 'checkbox' %}
+  <div class="form-check">
+    {{ field }}
+    <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+{% else %}
+  {% if field.label %}
+    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if not field.field.required %} <span class="rotulo-opcional">(opcional)</span>{% endif %}</label>
+  {% endif %}
+  {{ field }}
+{% endif %}
+{% if field.help_text %}<div class="form-text" id="{{ field.auto_id }}_helptext">{{ field.help_text|safe }}</div>{% endif %}
+{% if field.errors %}
+  <div class="invalid-feedback d-block" id="{{ field.auto_id }}_error">
+    {% for erro in field.errors %}<div>{{ erro }}</div>{% endfor %}
+  </div>
+{% endif %}
+{% if field.widget_type == 'checkbox' %}</div>{% endif %}
