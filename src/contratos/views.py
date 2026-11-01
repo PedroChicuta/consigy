@@ -10,6 +10,7 @@ from contratos import selectors, services
 from contratos.forms import MotivoForm, PagamentoForm
 from contratos.models import Contrato
 from core.exceptions import ErroDeNegocio
+from propostas.models import Modalidade
 
 POR_PAGINA = 25
 
@@ -31,14 +32,23 @@ class ListaView(PermissaoNecessariaMixin, View):
         cliente = request.GET.get('cliente', '').strip()
         pago_de = _data(request.GET.get('pago_de'))
         pago_ate = _data(request.GET.get('pago_ate'))
+        modalidade = request.GET.get('modalidade', '')
+        if not modalidade.isdigit():
+            modalidade = ''
         contratos = selectors.listar_contratos(
-            status=status, cliente=cliente, pago_de=pago_de, pago_ate=pago_ate
+            status=status,
+            cliente=cliente,
+            pago_de=pago_de,
+            pago_ate=pago_ate,
+            modalidade=modalidade,
         )
         pagina = Paginator(contratos, POR_PAGINA).get_page(request.GET.get('page'))
         contexto = {
             'pagina': pagina,
             'status': status,
             'cliente': cliente,
+            'modalidade': modalidade,
+            'modalidades': Modalidade.objects.all(),
             'pago_de': pago_de.isoformat() if pago_de else '',
             'pago_ate': pago_ate.isoformat() if pago_ate else '',
             'status_opcoes': Contrato.Status.choices,
@@ -51,7 +61,10 @@ class ListaView(PermissaoNecessariaMixin, View):
 
 def _buscar(pk):
     return get_object_or_404(
-        Contrato.objects.select_related('proposta__beneficio__cliente', 'proposta__banco'), pk=pk
+        Contrato.objects.select_related(
+            'proposta__beneficio__cliente', 'proposta__banco', 'modalidade'
+        ),
+        pk=pk,
     )
 
 

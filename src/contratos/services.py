@@ -25,6 +25,7 @@ def criar_contrato(*, usuario, proposta):
     """Cria o Contrato de uma Proposta, copiando os valores dela."""
     contrato = Contrato(
         proposta=proposta,
+        modalidade=proposta.modalidade,
         valor=proposta.valor,
         valor_liberado=proposta.valor_liberado,
         prazo=proposta.prazo,

@@ -1,7 +1,7 @@
 from django.db import models
 from simple_history.models import HistoricalRecords
 
-from propostas.models import Proposta
+from propostas.models import Modalidade, Proposta
 
 
 class Contrato(models.Model):
@@ -15,6 +15,7 @@ class Contrato(models.Model):
         CANCELADO = 'cancelado', 'Cancelado'
 
     proposta = models.OneToOneField(Proposta, on_delete=models.PROTECT, related_name='contrato')
+    modalidade = models.ForeignKey(Modalidade, on_delete=models.PROTECT, related_name='contratos')
     status = models.CharField(max_length=20, choices=Status, default=Status.FORMALIZADO)
     valor = models.DecimalField('valor (R$)', max_digits=12, decimal_places=2)
     valor_liberado = models.DecimalField('valor liberado (R$)', max_digits=12, decimal_places=2)

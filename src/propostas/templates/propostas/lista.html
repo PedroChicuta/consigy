@@ -24,11 +24,19 @@
         {% endfor %}
       </select>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-2">
       <select name="banco" class="form-select">
         <option value="">Todos os Bancos</option>
         {% for b in bancos %}
           <option value="{{ b.pk }}" {% if b.pk|stringformat:'s' == banco %}selected{% endif %}>{{ b.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select name="modalidade" class="form-select">
+        <option value="">Todas as Modalidades</option>
+        {% for m in modalidades %}
+          <option value="{{ m.pk }}" {% if m.pk|stringformat:'s' == modalidade %}selected{% endif %}>{{ m.nome }}</option>
         {% endfor %}
       </select>
     </div>

@@ -11,6 +11,7 @@ class ContratoFactory(factory.django.DjangoModelFactory):
         model = Contrato
 
     proposta = factory.SubFactory(PropostaFactory, status='formalizada')
+    modalidade = factory.SelfAttribute('proposta.modalidade')
     valor = Decimal('10000.00')
     valor_liberado = Decimal('9000.00')
     prazo = 84

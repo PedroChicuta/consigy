@@ -7,15 +7,23 @@
   <form class="row g-2 mb-3" role="search" action="{% url 'contratos:lista' %}" method="get"
         hx-get="{% url 'contratos:lista' %}" hx-trigger="input changed delay:300ms, change"
         hx-target="#tabela-contratos" hx-swap="outerHTML">
-    <div class="col-md-4">
+    <div class="col-md-3">
       <input type="search" name="cliente" value="{{ cliente }}" class="form-control" autocomplete="off"
              placeholder="Cliente (nome ou CPF)">
     </div>
-    <div class="col-md-4">
+    <div class="col-md-2">
       <select name="status" class="form-select">
         <option value="">Todos os status</option>
         {% for valor, rotulo in status_opcoes %}
           <option value="{{ valor }}" {% if valor == status %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="modalidade" class="form-select">
+        <option value="">Todas as Modalidades</option>
+        {% for m in modalidades %}
+          <option value="{{ m.pk }}" {% if m.pk|stringformat:'s' == modalidade %}selected{% endif %}>{{ m.nome }}</option>
         {% endfor %}
       </select>
     </div>

@@ -1,6 +1,6 @@
 <table class="table table-sm">
   <thead>
-    <tr><th>#</th><th>Proposta</th><th>Banco</th><th>Valor</th><th>Liberado</th><th>Prazo</th><th>Parcela</th><th>Status</th><th>Pago em</th></tr>
+    <tr><th>#</th><th>Proposta</th><th>Banco</th><th>Modalidade</th><th>Valor</th><th>Liberado</th><th>Prazo</th><th>Parcela</th><th>Status</th><th>Pago em</th></tr>
   </thead>
   <tbody>
     {% for contrato in contratos %}
@@ -8,6 +8,7 @@
         <td><a href="{% url 'contratos:detalhe' contrato.pk %}">{{ contrato.pk }}</a></td>
         <td><a href="{% url 'propostas:detalhe' contrato.proposta_id %}">{{ contrato.proposta_id }}</a></td>
         <td>{{ contrato.proposta.banco.nome }}</td>
+        <td>{{ contrato.modalidade.nome }}</td>
         <td>R$ {{ contrato.valor }}</td>
         <td>R$ {{ contrato.valor_liberado }}</td>
         <td>{{ contrato.prazo }}x</td>
@@ -16,7 +17,7 @@
         <td>{{ contrato.data_pagamento|date:'d/m/Y'|default:'—' }}</td>
       </tr>
     {% empty %}
-      <tr><td colspan="9" class="text-muted">Nenhum Contrato.</td></tr>
+      <tr><td colspan="10" class="text-muted">Nenhum Contrato.</td></tr>
     {% endfor %}
   </tbody>
 </table>

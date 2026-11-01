@@ -8,11 +8,13 @@ def _base():
     return Proposta.objects.select_related('beneficio__cliente', 'banco', 'modalidade', 'operador')
 
 
-def listar_propostas(*, status='', banco=None, cliente=''):
-    """Propostas de toda a equipe, filtradas por status, Banco (pk) e Cliente (nome ou CPF)."""
+def listar_propostas(*, status='', banco=None, cliente='', modalidade=None):
+    """Propostas da equipe, filtradas por status, Banco e Modalidade (pk) e Cliente (nome/CPF)."""
     propostas = _base()
     if status:
         propostas = propostas.filter(status=status)
+    if modalidade:
+        propostas = propostas.filter(modalidade_id=modalidade)
     if banco:
         propostas = propostas.filter(banco_id=banco)
     cliente = (cliente or '').strip()

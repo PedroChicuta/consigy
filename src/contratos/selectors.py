@@ -14,11 +14,15 @@ def contratos_do_cliente(*, cliente):
     ).filter(proposta__beneficio__cliente=cliente)
 
 
-def listar_contratos(*, status='', cliente='', pago_de=None, pago_ate=None):
-    """Contratos filtrados por status, Cliente (nome ou CPF) e período de pagamento."""
-    contratos = Contrato.objects.select_related('proposta__beneficio__cliente', 'proposta__banco')
+def listar_contratos(*, status='', cliente='', pago_de=None, pago_ate=None, modalidade=None):
+    """Contratos filtrados por status, Modalidade (pk), Cliente (nome/CPF) e data de pagamento."""
+    contratos = Contrato.objects.select_related(
+        'proposta__beneficio__cliente', 'proposta__banco', 'modalidade'
+    )
     if status:
         contratos = contratos.filter(status=status)
+    if modalidade:
+        contratos = contratos.filter(modalidade_id=modalidade)
     if pago_de:
         contratos = contratos.filter(data_pagamento__gte=pago_de)
     if pago_ate:
