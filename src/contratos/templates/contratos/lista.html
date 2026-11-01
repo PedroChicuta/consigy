@@ -7,17 +7,23 @@
   <form class="row g-2 mb-3" role="search" action="{% url 'contratos:lista' %}" method="get"
         hx-get="{% url 'contratos:lista' %}" hx-trigger="input changed delay:300ms, change"
         hx-target="#tabela-contratos" hx-swap="outerHTML">
-    <div class="col-md-6">
+    <div class="col-md-4">
       <input type="search" name="cliente" value="{{ cliente }}" class="form-control" autocomplete="off"
              placeholder="Cliente (nome ou CPF)">
     </div>
-    <div class="col-md-6">
+    <div class="col-md-4">
       <select name="status" class="form-select">
         <option value="">Todos os status</option>
         {% for valor, rotulo in status_opcoes %}
           <option value="{{ valor }}" {% if valor == status %}selected{% endif %}>{{ rotulo }}</option>
         {% endfor %}
       </select>
+    </div>
+    <div class="col-md-2">
+      <input type="date" name="pago_de" value="{{ pago_de }}" class="form-control" title="Pago a partir de">
+    </div>
+    <div class="col-md-2">
+      <input type="date" name="pago_ate" value="{{ pago_ate }}" class="form-control" title="Pago até">
     </div>
   </form>
   {% include 'contratos/partials/_tabela.html' %}

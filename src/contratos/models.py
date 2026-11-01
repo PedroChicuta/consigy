@@ -21,6 +21,7 @@ class Contrato(models.Model):
     prazo = models.PositiveSmallIntegerField('prazo (meses)')
     parcela = models.DecimalField('parcela (R$)', max_digits=10, decimal_places=2)
     taxa = models.DecimalField('taxa (% a.m.)', max_digits=6, decimal_places=4)
+    data_pagamento = models.DateField('data de pagamento', null=True, blank=True)
     motivo = models.TextField('motivo do cancelamento', blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 

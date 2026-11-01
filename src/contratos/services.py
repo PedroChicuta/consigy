@@ -1,6 +1,7 @@
 from django.db import transaction
+from django.utils import timezone
 
-from contratos.exceptions import MotivoObrigatorio, TransicaoInvalida
+from contratos.exceptions import DataPagamentoInvalida, MotivoObrigatorio, TransicaoInvalida
 from contratos.models import Contrato
 
 # Cada etapa só é marcada a partir da anterior.
@@ -35,13 +36,19 @@ def criar_contrato(*, usuario, proposta):
 
 
 @transaction.atomic
-def avancar_contrato(*, usuario, contrato, status):
-    """Marca Averbado, Pago ou Quitado, na ordem."""
+def avancar_contrato(*, usuario, contrato, status, data_pagamento=None):
+    """Marca Averbado, Pago ou Quitado, na ordem. Pago exige a data de pagamento."""
     anterior = ETAPA_ANTERIOR.get(status)
     if anterior is None or contrato.status != anterior:
         raise TransicaoInvalida(
             f'Não é possível marcar essa etapa a partir de {contrato.get_status_display()}.'
         )
+    if status == Contrato.Status.PAGO:
+        if data_pagamento is None:
+            raise DataPagamentoInvalida('Informe a data de pagamento.')
+        if data_pagamento > timezone.localdate():
+            raise DataPagamentoInvalida('A data de pagamento não pode ser futura.')
+        contrato.data_pagamento = data_pagamento
     contrato.status = status
     _salvar(contrato, usuario=usuario)
     return contrato

@@ -11,7 +11,7 @@
       {% if contrato.status == 'formalizado' %}
         <form method="post" action="{% url 'contratos:avancar' contrato.pk 'averbado' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Marcar Averbado</button></form>
       {% elif contrato.status == 'averbado' %}
-        <form method="post" action="{% url 'contratos:avancar' contrato.pk 'pago' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Marcar Pago</button></form>
+        <form method="post" class="d-flex gap-2 align-items-end" action="{% url 'contratos:avancar' contrato.pk 'pago' %}">{% csrf_token %}{{ form_pagamento }}<button class="btn btn-primary" type="submit">Marcar Pago</button></form>
       {% elif contrato.status == 'pago' %}
         <form method="post" action="{% url 'contratos:avancar' contrato.pk 'quitado' %}">{% csrf_token %}<button class="btn btn-success" type="submit">Marcar Quitado</button></form>
       {% endif %}
@@ -28,6 +28,7 @@
     <dt class="col-sm-3">Prazo</dt><dd class="col-sm-9">{{ contrato.prazo }} meses</dd>
     <dt class="col-sm-3">Parcela</dt><dd class="col-sm-9">R$ {{ contrato.parcela }}</dd>
     <dt class="col-sm-3">Taxa</dt><dd class="col-sm-9">{{ contrato.taxa }}% a.m.</dd>
+    {% if contrato.data_pagamento %}<dt class="col-sm-3">Pago em</dt><dd class="col-sm-9">{{ contrato.data_pagamento|date:'d/m/Y' }}</dd>{% endif %}
     {% if contrato.motivo %}<dt class="col-sm-3">Motivo</dt><dd class="col-sm-9">{{ contrato.motivo|linebreaksbr }}</dd>{% endif %}
     <dt class="col-sm-3">Criado em</dt><dd class="col-sm-9">{{ contrato.criado_em|date:'d/m/Y H:i' }}</dd>
   </dl>

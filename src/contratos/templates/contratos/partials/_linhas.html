@@ -1,6 +1,6 @@
 <table class="table table-sm">
   <thead>
-    <tr><th>#</th><th>Proposta</th><th>Banco</th><th>Valor</th><th>Liberado</th><th>Prazo</th><th>Parcela</th><th>Status</th></tr>
+    <tr><th>#</th><th>Proposta</th><th>Banco</th><th>Valor</th><th>Liberado</th><th>Prazo</th><th>Parcela</th><th>Status</th><th>Pago em</th></tr>
   </thead>
   <tbody>
     {% for contrato in contratos %}
@@ -13,9 +13,10 @@
         <td>{{ contrato.prazo }}x</td>
         <td>R$ {{ contrato.parcela }}</td>
         <td>{{ contrato.get_status_display }}</td>
+        <td>{{ contrato.data_pagamento|date:'d/m/Y'|default:'—' }}</td>
       </tr>
     {% empty %}
-      <tr><td colspan="7" class="text-muted">Nenhum Contrato.</td></tr>
+      <tr><td colspan="9" class="text-muted">Nenhum Contrato.</td></tr>
     {% endfor %}
   </tbody>
 </table>

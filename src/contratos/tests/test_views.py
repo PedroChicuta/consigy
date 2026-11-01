@@ -4,6 +4,7 @@ from django.contrib.auth.models import Group
 from django.urls import reverse
 
 from contratos.models import Contrato
+from contratos.tests.factories import ContratoFactory
 from propostas.models import Proposta
 from propostas.tests.factories import PropostaFactory
 
@@ -49,3 +50,30 @@ def test_sem_permissao_nao_formaliza(client, db):
 
     assert resposta.status_code == 403
     assert not Contrato.objects.exists()
+
+
+@pytest.mark.django_db
+def test_marcar_pago_pela_view_guarda_a_data_e_exibe(client, operador):
+    contrato = ContratoFactory(status='averbado')
+    url = reverse('contratos:avancar', args=[contrato.pk, 'pago'])
+
+    client.post(url)
+    contrato.refresh_from_db()
+    assert contrato.status == 'averbado'
+
+    client.post(url, {'data_pagamento': '2026-10-15'})
+    contrato.refresh_from_db()
+    assert contrato.status == 'pago'
+    assert str(contrato.data_pagamento) == '2026-10-15'
+    detalhe = client.get(reverse('contratos:detalhe', args=[contrato.pk]))
+    assert '15/10/2026' in detalhe.content.decode()
+    assert '15/10/2026' in client.get(reverse('contratos:lista')).content.decode()
+
+
+@pytest.mark.django_db
+def test_contrato_pago_antigo_sem_data_nao_quebra(client, operador):
+    contrato = ContratoFactory(status='pago')
+
+    assert client.get(reverse('contratos:detalhe', args=[contrato.pk])).status_code == 200
+    resposta = client.get(reverse('contratos:lista'), {'pago_de': '2026-01-01', 'pago_ate': 'x'})
+    assert resposta.status_code == 200
