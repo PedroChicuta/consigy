@@ -31,6 +31,7 @@ class PropostaFactory(factory.django.DjangoModelFactory):
     modalidade = factory.SubFactory(ModalidadeFactory)
     operador = factory.SubFactory(UsuarioFactory)
     valor = Decimal('10000.00')
+    valor_liberado = Decimal('9000.00')
     prazo = 84
     parcela = Decimal('250.00')
     taxa = Decimal('1.6500')

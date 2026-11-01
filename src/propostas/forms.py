@@ -24,6 +24,9 @@ class PropostaForm(forms.Form):
         empty_label='Selecione a Modalidade',
     )
     valor = forms.DecimalField(label='Valor (R$)', max_digits=12, decimal_places=2)
+    valor_liberado = forms.DecimalField(
+        label='Valor liberado (R$)', max_digits=12, decimal_places=2
+    )
     prazo = forms.IntegerField(label='Prazo (meses)', min_value=1, max_value=32767)
     parcela = forms.DecimalField(label='Parcela (R$)', max_digits=10, decimal_places=2)
     taxa = forms.DecimalField(label='Taxa (% a.m.)', max_digits=6, decimal_places=4)

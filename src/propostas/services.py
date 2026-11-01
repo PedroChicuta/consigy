@@ -31,16 +31,30 @@ def _salvar(proposta, *, usuario):
     proposta.save()
 
 
-def _validar_condicoes(*, valor, prazo, parcela, taxa):
+def _validar_condicoes(*, valor, valor_liberado, prazo, parcela, taxa):
     informados = {'valor': valor, 'prazo': prazo, 'parcela': parcela, 'taxa': taxa}
     for campo, rotulo in CAMPOS_POSITIVOS.items():
         if informados[campo] <= 0:
             raise CondicoesInvalidas(f'{rotulo} deve ser maior que zero.')
+    if valor_liberado <= 0:
+        raise CondicoesInvalidas('O valor liberado deve ser maior que zero.')
+    if valor_liberado > valor:
+        raise CondicoesInvalidas('O valor liberado não pode ser maior que o valor do crédito.')
 
 
 @transaction.atomic
 def criar_proposta(
-    *, usuario, beneficio, banco, modalidade, valor, prazo, parcela, taxa, observacoes=''
+    *,
+    usuario,
+    beneficio,
+    banco,
+    modalidade,
+    valor,
+    valor_liberado,
+    prazo,
+    parcela,
+    taxa,
+    observacoes='',
 ):
     if not beneficio.ativo:
         raise BeneficioInativo
@@ -48,13 +62,16 @@ def criar_proposta(
         raise BancoInativo
     if not modalidade.ativo:
         raise ModalidadeInativa
-    _validar_condicoes(valor=valor, prazo=prazo, parcela=parcela, taxa=taxa)
+    _validar_condicoes(
+        valor=valor, valor_liberado=valor_liberado, prazo=prazo, parcela=parcela, taxa=taxa
+    )
     proposta = Proposta(
         beneficio=beneficio,
         banco=banco,
         modalidade=modalidade,
         operador=usuario,
         valor=valor,
+        valor_liberado=valor_liberado,
         prazo=prazo,
         parcela=parcela,
         taxa=taxa,
@@ -66,7 +83,18 @@ def criar_proposta(
 
 @transaction.atomic
 def editar_proposta(
-    *, usuario, proposta, beneficio, banco, modalidade, valor, prazo, parcela, taxa, observacoes=''
+    *,
+    usuario,
+    proposta,
+    beneficio,
+    banco,
+    modalidade,
+    valor,
+    valor_liberado,
+    prazo,
+    parcela,
+    taxa,
+    observacoes='',
 ):
     """Altera as condições e as observações; só vale enquanto a Proposta está Digitada."""
     if proposta.status != Proposta.Status.DIGITADA:
@@ -79,11 +107,14 @@ def editar_proposta(
         raise BancoInativo
     if modalidade != proposta.modalidade and not modalidade.ativo:
         raise ModalidadeInativa
-    _validar_condicoes(valor=valor, prazo=prazo, parcela=parcela, taxa=taxa)
+    _validar_condicoes(
+        valor=valor, valor_liberado=valor_liberado, prazo=prazo, parcela=parcela, taxa=taxa
+    )
     proposta.beneficio = beneficio
     proposta.banco = banco
     proposta.modalidade = modalidade
     proposta.valor = valor
+    proposta.valor_liberado = valor_liberado
     proposta.prazo = prazo
     proposta.parcela = parcela
     proposta.taxa = taxa

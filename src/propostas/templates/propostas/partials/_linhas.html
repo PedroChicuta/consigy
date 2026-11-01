@@ -1,6 +1,6 @@
 <table class="table table-hover">
   <thead>
-    <tr><th>#</th><th>Cliente</th><th>Benefício</th><th>Banco</th><th>Modalidade</th><th>Valor</th><th>Prazo</th><th>Status</th></tr>
+    <tr><th>#</th><th>Cliente</th><th>Benefício</th><th>Banco</th><th>Modalidade</th><th>Valor</th><th>Liberado</th><th>Prazo</th><th>Status</th></tr>
   </thead>
   <tbody>
     {% for proposta in propostas %}
@@ -11,11 +11,12 @@
         <td>{{ proposta.banco.nome }}</td>
         <td>{{ proposta.modalidade.nome }}</td>
         <td>R$ {{ proposta.valor }}</td>
+        <td>R$ {{ proposta.valor_liberado }}</td>
         <td>{{ proposta.prazo }}x</td>
         <td>{{ proposta.get_status_display }}</td>
       </tr>
     {% empty %}
-      <tr><td colspan="8" class="text-muted">Nenhuma Proposta encontrada.</td></tr>
+      <tr><td colspan="9" class="text-muted">Nenhuma Proposta encontrada.</td></tr>
     {% endfor %}
   </tbody>
 </table>

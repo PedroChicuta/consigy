@@ -24,6 +24,7 @@
     <dd class="col-sm-9"><a href="{% url 'propostas:detalhe' contrato.proposta_id %}">{{ contrato.proposta_id }}</a></dd>
     <dt class="col-sm-3">Banco</dt><dd class="col-sm-9">{{ contrato.proposta.banco.nome }}</dd>
     <dt class="col-sm-3">Valor</dt><dd class="col-sm-9">R$ {{ contrato.valor }}</dd>
+    <dt class="col-sm-3">Valor liberado</dt><dd class="col-sm-9">R$ {{ contrato.valor_liberado }}</dd>
     <dt class="col-sm-3">Prazo</dt><dd class="col-sm-9">{{ contrato.prazo }} meses</dd>
     <dt class="col-sm-3">Parcela</dt><dd class="col-sm-9">R$ {{ contrato.parcela }}</dd>
     <dt class="col-sm-3">Taxa</dt><dd class="col-sm-9">{{ contrato.taxa }}% a.m.</dd>

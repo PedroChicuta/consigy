@@ -134,6 +134,7 @@ class EditarView(PermissaoNecessariaMixin, View):
             'banco': proposta.banco_id,
             'modalidade': proposta.modalidade_id,
             'valor': proposta.valor,
+            'valor_liberado': proposta.valor_liberado,
             'prazo': proposta.prazo,
             'parcela': proposta.parcela,
             'taxa': proposta.taxa,

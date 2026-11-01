@@ -13,7 +13,7 @@ from propostas.forms import PropostaForm
 from propostas.models import Modalidade, Proposta
 from propostas.tests.factories import ModalidadeFactory, PropostaFactory, UsuarioFactory
 
-CONDICOES = {'valor': 1000, 'prazo': 12, 'parcela': 100, 'taxa': 1}
+CONDICOES = {'valor': 1000, 'valor_liberado': 900, 'prazo': 12, 'parcela': 100, 'taxa': 1}
 
 
 def _usuario(grupo, username, staff=True):
@@ -76,7 +76,9 @@ def test_form_de_edicao_mantem_modalidade_inativada_depois(db):
 
 
 def test_form_sem_modalidade_e_invalido(db):
-    form = PropostaForm(data={'valor': '1', 'prazo': '1', 'parcela': '1', 'taxa': '1'})
+    form = PropostaForm(
+        data={'valor': '1', 'valor_liberado': '1', 'prazo': '1', 'parcela': '1', 'taxa': '1'}
+    )
 
     assert not form.is_valid()
     assert 'modalidade' in form.errors

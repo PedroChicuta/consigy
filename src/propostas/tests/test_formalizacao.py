@@ -12,6 +12,7 @@ from propostas.tests.factories import PropostaFactory, UsuarioFactory
 
 CONDICOES = {
     'valor': Decimal('12000.00'),
+    'valor_liberado': Decimal('11000.00'),
     'prazo': 72,
     'parcela': Decimal('300.00'),
     'taxa': Decimal('1.7000'),
@@ -31,6 +32,7 @@ def test_formalizar_aprovada_cria_contrato_com_os_valores(usuario):
     proposta.refresh_from_db()
     assert proposta.status == Proposta.Status.FORMALIZADA
     assert contrato.proposta == proposta
+    assert contrato.valor_liberado == CONDICOES['valor_liberado']
     assert (contrato.valor, contrato.prazo, contrato.parcela, contrato.taxa) == (
         CONDICOES['valor'],
         CONDICOES['prazo'],

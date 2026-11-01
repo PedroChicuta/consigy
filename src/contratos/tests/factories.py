@@ -12,6 +12,7 @@ class ContratoFactory(factory.django.DjangoModelFactory):
 
     proposta = factory.SubFactory(PropostaFactory, status='formalizada')
     valor = Decimal('10000.00')
+    valor_liberado = Decimal('9000.00')
     prazo = 84
     parcela = Decimal('250.00')
     taxa = Decimal('1.6500')

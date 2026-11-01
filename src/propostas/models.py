@@ -43,6 +43,7 @@ class Proposta(models.Model):
     )
     status = models.CharField(max_length=20, choices=Status, default=Status.DIGITADA)
     valor = models.DecimalField('valor (R$)', max_digits=12, decimal_places=2)
+    valor_liberado = models.DecimalField('valor liberado (R$)', max_digits=12, decimal_places=2)
     prazo = models.PositiveSmallIntegerField('prazo (meses)')
     parcela = models.DecimalField('parcela (R$)', max_digits=10, decimal_places=2)
     taxa = models.DecimalField('taxa (% a.m.)', max_digits=6, decimal_places=4)

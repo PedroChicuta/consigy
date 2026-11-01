@@ -10,7 +10,13 @@ from beneficios.tests.factories import BeneficioFactory, MargemFactory
 from propostas.models import Proposta
 from propostas.tests.factories import ModalidadeFactory, PropostaFactory
 
-DADOS = {'valor': '9000.00', 'prazo': '60', 'parcela': '200.00', 'taxa': '1.5000'}
+DADOS = {
+    'valor': '9000.00',
+    'valor_liberado': '8500.00',
+    'prazo': '60',
+    'parcela': '200.00',
+    'taxa': '1.5000',
+}
 
 
 @pytest.fixture

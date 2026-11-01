@@ -25,6 +25,7 @@ def criar_contrato(*, usuario, proposta):
     contrato = Contrato(
         proposta=proposta,
         valor=proposta.valor,
+        valor_liberado=proposta.valor_liberado,
         prazo=proposta.prazo,
         parcela=proposta.parcela,
         taxa=proposta.taxa,
