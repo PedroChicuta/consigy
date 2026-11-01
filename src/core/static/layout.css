@@ -1,0 +1,168 @@
+/* Layout da navegação (ADR 0009). Cores só via variáveis do Bootstrap e do tema.css. */
+:root {
+  --barra-altura: 3.5rem;
+  --menu-largura: 15rem;
+  --transicao: 0.2s ease-in-out;
+  --realce-sobre-primaria: rgba(255, 255, 255, 0.14);
+}
+
+/* Barra superior */
+.barra-superior {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  min-height: var(--barra-altura);
+  padding-block: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.botao-icone,
+.menu-usuario {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  border-radius: var(--bs-border-radius);
+  background: transparent;
+  color: #fff;
+  transition: background-color var(--transicao);
+}
+
+.botao-icone {
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+}
+
+.menu-usuario {
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+  font-size: 0.925rem;
+}
+
+.botao-icone:hover,
+.botao-icone:focus-visible,
+.menu-usuario:hover,
+.menu-usuario:focus-visible,
+.menu-usuario[aria-expanded='true'] {
+  background-color: var(--realce-sobre-primaria);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background-color: var(--realce-sobre-primaria);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Chevron: aponta para baixo; gira conforme o estado do controle que o contém. */
+.chevron {
+  flex-shrink: 0;
+  transition: transform var(--transicao);
+}
+
+.menu-usuario[aria-expanded='true'] .chevron {
+  transform: rotate(180deg);
+}
+
+.menu-grupo-titulo[aria-expanded='false'] .chevron {
+  transform: rotate(-90deg);
+}
+
+/* Conteúdo: largura confortável de leitura, sem estourar ao lado da sidebar. */
+.conteudo {
+  min-width: 0;
+  max-width: 1320px;
+}
+
+/* Sidebar (duas classes para vencer `.offcanvas-md .offcanvas-body` do Bootstrap). */
+.menu-lateral .menu-lateral-corpo {
+  display: block;
+  padding: 1rem 0.75rem;
+}
+
+.menu-grupo-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  border: 0;
+  border-radius: var(--bs-border-radius);
+  background: none;
+  color: var(--bs-secondary-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.menu-grupo-titulo:first-child {
+  margin-top: 0;
+}
+
+.menu-grupo-titulo:hover {
+  color: var(--bs-body-color);
+}
+
+.menu-grupo-itens {
+  margin: 0.125rem 0 0;
+}
+
+.menu-link {
+  display: block;
+  margin-bottom: 0.125rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--bs-border-radius);
+  color: var(--bs-body-color);
+  font-size: 0.925rem;
+  text-decoration: none;
+  transition: background-color var(--transicao), color var(--transicao);
+}
+
+.menu-link:hover {
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
+}
+
+.menu-link.ativo {
+  background-color: var(--bs-primary-bg-subtle);
+  color: var(--bs-primary-text-emphasis);
+  font-weight: 600;
+}
+
+/* Telas largas: sidebar fixa ao lado do conteúdo, recolhível com deslize. */
+@media (min-width: 768px) {
+  .menu-lateral {
+    position: sticky;
+    top: var(--barra-altura);
+    flex: 0 0 var(--menu-largura);
+    width: var(--menu-largura);
+    height: calc(100vh - var(--barra-altura));
+    overflow-y: auto;
+    border-right: var(--bs-border-width) solid var(--bs-border-color);
+    background-color: var(--bs-body-bg) !important;
+    transition: margin-left var(--transicao), visibility var(--transicao);
+  }
+
+  .menu-recolhido .menu-lateral {
+    margin-left: calc(-1 * var(--menu-largura));
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-lateral,
+  .chevron,
+  .menu-link,
+  .botao-icone,
+  .menu-usuario {
+    transition: none;
+  }
+}

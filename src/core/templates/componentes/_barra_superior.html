@@ -1,0 +1,33 @@
+<header class="navbar bg-primary-tema barra-superior">
+  <div class="container-fluid gap-2">
+    {% if user.is_authenticated %}
+      <button id="botao-menu" class="botao-icone" type="button" aria-controls="menu-lateral" aria-expanded="true" aria-label="Alternar menu de navegação">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
+      </button>
+    {% endif %}
+    <a class="navbar-brand fw-semibold me-auto" href="{% url 'inicio:index' %}">Consignado</a>
+    {% if user.is_authenticated %}
+      <div class="dropdown">
+        <button class="menu-usuario" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu do usuário">
+          <span class="avatar" aria-hidden="true">{{ iniciais_operador }}</span>
+          <span class="d-none d-sm-inline" id="nome-operador">{{ nome_operador }}</span>
+          {% include 'componentes/_chevron.html' %}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+          <li><h2 class="dropdown-header">{{ nome_operador }}</h2></li>
+          <li><button id="botao-tema" class="dropdown-item" type="button" aria-label="Mudar para tema escuro">Tema escuro</button></li>
+          {% if user.is_staff %}
+            <li><a class="dropdown-item" href="{% url 'admin:index' %}">Administração</a></li>
+          {% endif %}
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <form method="post" action="{% url 'accounts:logout' %}">
+              {% csrf_token %}
+              <button class="dropdown-item" type="submit">Sair</button>
+            </form>
+          </li>
+        </ul>
+      </div>
+    {% endif %}
+  </div>
+</header>

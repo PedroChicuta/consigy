@@ -1,0 +1,21 @@
+<aside id="menu-lateral" class="offcanvas-md offcanvas-start menu-lateral" tabindex="-1" aria-label="Navegação">
+  <div class="offcanvas-header">
+    <span class="offcanvas-title fw-semibold">Navegação</span>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#menu-lateral" aria-label="Fechar"></button>
+  </div>
+  <nav class="offcanvas-body menu-lateral-corpo">
+    {% for grupo in grupos_menu %}
+      {% with alvo='grupo-'|add:grupo.slug %}
+        <button class="menu-grupo-titulo" type="button" data-bs-toggle="collapse" data-bs-target="#{{ alvo }}" aria-expanded="true" aria-controls="{{ alvo }}">
+          {{ grupo.nome }}
+          {% include 'componentes/_chevron.html' %}
+        </button>
+        <ul id="{{ alvo }}" class="collapse show list-unstyled menu-grupo-itens">
+          {% for item in grupo.itens %}
+            <li><a class="menu-link{% if item.ativo %} ativo{% endif %}" href="{{ item.url }}"{% if item.ativo %} aria-current="page"{% endif %}>{{ item.nome }}</a></li>
+          {% endfor %}
+        </ul>
+      {% endwith %}
+    {% endfor %}
+  </nav>
+</aside>
