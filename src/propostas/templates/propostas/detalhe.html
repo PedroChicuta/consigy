@@ -21,7 +21,11 @@
     {% endif %}
     {% if proposta.status == 'enviada' and perms.propostas.change_proposta %}
       <form method="post" action="{% url 'propostas:avancar' proposta.pk 'em_analise' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Marcar Em análise</button></form>
-    {% elif proposta.status == 'em_analise' and perms.propostas.change_proposta %}
+    {% elif proposta.status == 'em_analise' and perms.propostas.change_proposta and proposta.modalidade.envolve_portabilidade %}
+      <form method="post" action="{% url 'propostas:avancar' proposta.pk 'aguardando_saldo' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Marcar Aguardando saldo</button></form>
+    {% elif proposta.status == 'aguardando_saldo' and perms.propostas.change_proposta %}
+      <form method="post" action="{% url 'propostas:avancar' proposta.pk 'portabilidade_autorizada' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Marcar Portabilidade autorizada</button></form>
+    {% elif proposta.status == 'em_analise' and perms.propostas.change_proposta or proposta.status == 'portabilidade_autorizada' and perms.propostas.change_proposta %}
       <form method="post" action="{% url 'propostas:avancar' proposta.pk 'aprovada' %}">{% csrf_token %}<button class="btn btn-success" type="submit">Marcar Aprovada</button></form>
     {% elif proposta.status == 'aprovada' and perms.propostas.change_proposta %}
       <form method="post" action="{% url 'propostas:formalizar' proposta.pk %}">{% csrf_token %}<button class="btn btn-success" type="submit">Formalizar</button></form>

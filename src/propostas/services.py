@@ -148,17 +148,24 @@ def editar_observacoes(*, usuario, proposta, observacoes):
     return proposta
 
 
-# Cada etapa só é marcada a partir da anterior.
-ETAPA_ANTERIOR = {
+# Cada etapa só é marcada a partir da anterior; o fluxo depende da Modalidade.
+FLUXO_SIMPLES = {
     Proposta.Status.EM_ANALISE: Proposta.Status.ENVIADA,
     Proposta.Status.APROVADA: Proposta.Status.EM_ANALISE,
+}
+FLUXO_PORTABILIDADE = {
+    Proposta.Status.EM_ANALISE: Proposta.Status.ENVIADA,
+    Proposta.Status.AGUARDANDO_SALDO: Proposta.Status.EM_ANALISE,
+    Proposta.Status.PORTABILIDADE_AUTORIZADA: Proposta.Status.AGUARDANDO_SALDO,
+    Proposta.Status.APROVADA: Proposta.Status.PORTABILIDADE_AUTORIZADA,
 }
 
 
 @transaction.atomic
 def avancar_proposta(*, usuario, proposta, status):
-    """Marca Em análise ou Aprovada, na ordem."""
-    anterior = ETAPA_ANTERIOR.get(status)
+    """Marca a próxima etapa (Em análise até Aprovada), na ordem da Modalidade."""
+    fluxo = FLUXO_PORTABILIDADE if proposta.modalidade.envolve_portabilidade else FLUXO_SIMPLES
+    anterior = fluxo.get(status)
     if anterior is None or proposta.status != anterior:
         raise TransicaoInvalida(
             f'Não é possível marcar essa etapa a partir de {proposta.get_status_display()}.'

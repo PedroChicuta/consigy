@@ -30,6 +30,8 @@ class Proposta(models.Model):
         DIGITADA = 'digitada', 'Digitada'
         ENVIADA = 'enviada', 'Enviada ao Banco'
         EM_ANALISE = 'em_analise', 'Em análise'
+        AGUARDANDO_SALDO = 'aguardando_saldo', 'Aguardando saldo'
+        PORTABILIDADE_AUTORIZADA = 'portabilidade_autorizada', 'Portabilidade autorizada'
         APROVADA = 'aprovada', 'Aprovada'
         FORMALIZADA = 'formalizada', 'Formalizada'
         RECUSADA = 'recusada', 'Recusada'
@@ -41,7 +43,7 @@ class Proposta(models.Model):
     operador = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='propostas'
     )
-    status = models.CharField(max_length=20, choices=Status, default=Status.DIGITADA)
+    status = models.CharField(max_length=30, choices=Status, default=Status.DIGITADA)
     valor = models.DecimalField('valor (R$)', max_digits=12, decimal_places=2)
     valor_liberado = models.DecimalField('valor liberado (R$)', max_digits=12, decimal_places=2)
     prazo = models.PositiveSmallIntegerField('prazo (meses)')
