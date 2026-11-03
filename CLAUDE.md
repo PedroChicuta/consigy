@@ -45,9 +45,14 @@ Detalhes e justificativas nos ADRs 0002 a 0005.
 
 ## Agent skills
 
+Este repositório é configurado para **Claude Code** (`CLAUDE.md`) e **Antigravity** (`AGENTS.md` -> `CLAUDE.md`), compartilhando as mesmas convenções, ADRs, glossário e skills (`mattpocock-skills`).
+
+- **Invocação de skills:** quando uma skill instruir `Call the Skill tool with "<nome>"`, no Claude Code chame a tool `Skill`; no Antigravity leia o `SKILL.md` correspondente listado em `<skills>` antes de prosseguir.
+- **Loop automatizado (Ralph):** `scripts/ralph.sh` aceita `--agent claude` (padrão) ou `--agent agy` (ou `RALPH_AGENT=agy`).
+
 ### Issue tracker
 
-Issues e specs ficam no GitHub Issues (CLI `gh`). Ver `docs/agents/issue-tracker.md`.
+Issues e specs ficam no GitHub Issues, acessadas via MCP `github` (ou CLI `gh` como fallback, se instalado). Ver `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
