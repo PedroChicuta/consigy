@@ -202,7 +202,11 @@ def _encerrar(*, usuario, proposta, status, motivo):
 
 @transaction.atomic
 def recusar_proposta(*, usuario, proposta, motivo):
-    """O Banco recusou; vale de qualquer etapa antes de Formalizada."""
+    """O Banco recusou; vale de qualquer etapa após o envio ao Banco e antes de Formalizada."""
+    if proposta.status == Proposta.Status.DIGITADA:
+        raise TransicaoInvalida(
+            'Não é possível recusar uma Proposta que ainda não foi enviada ao Banco.'
+        )
     return _encerrar(
         usuario=usuario, proposta=proposta, status=Proposta.Status.RECUSADA, motivo=motivo
     )

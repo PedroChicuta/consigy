@@ -68,5 +68,9 @@ class Proposta(models.Model):
     def cliente(self):
         return self.beneficio.cliente
 
+    @property
+    def encerrada(self):
+        return self.status in FINAIS
+
 
 FINAIS = {Proposta.Status.FORMALIZADA, Proposta.Status.RECUSADA, Proposta.Status.CANCELADA}

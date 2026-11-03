@@ -17,7 +17,7 @@ def operador(client, db):
     return usuario
 
 
-def test_operador_formaliza_e_ve_o_contrato_nas_fichas(client, operador):
+def test_operador_formaliza_redireciona_ao_contrato_e_exibe_card_na_proposta(client, operador):
     proposta = PropostaFactory(status=Proposta.Status.APROVADA)
 
     resposta = client.post(reverse('propostas:formalizar', args=[proposta.pk]))
@@ -25,9 +25,18 @@ def test_operador_formaliza_e_ve_o_contrato_nas_fichas(client, operador):
     assert resposta.status_code == 302
     contrato = Contrato.objects.get()
     assert contrato.proposta == proposta
-    ficha_proposta = client.get(reverse('propostas:detalhe', args=[proposta.pk]))
     url = reverse('contratos:detalhe', args=[contrato.pk])
-    assert url in ficha_proposta.content.decode()
+    assert resposta.url == url
+
+    detalhe_contrato = client.get(url).content.decode()
+    assert f'Contrato #{contrato.pk}' in detalhe_contrato or 'formalizada' in detalhe_contrato
+
+    ficha_proposta = client.get(reverse('propostas:detalhe', args=[proposta.pk])).content.decode()
+    assert url in ficha_proposta
+    assert f'Abrir Contrato #{contrato.pk}' in ficha_proposta
+    assert contrato.get_status_display() in ficha_proposta
+    assert '<th>Proposta</th><th>Banco</th>' not in ficha_proposta
+
     ficha_cliente = client.get(reverse('clientes:detalhe', args=[proposta.cliente.pk]))
     assert url in ficha_cliente.content.decode()
 
@@ -77,3 +86,21 @@ def test_contrato_pago_antigo_sem_data_nao_quebra(client, operador):
     assert client.get(reverse('contratos:detalhe', args=[contrato.pk])).status_code == 200
     resposta = client.get(reverse('contratos:lista'), {'pago_de': '2026-01-01', 'pago_ate': 'x'})
     assert resposta.status_code == 200
+
+
+@pytest.mark.django_db
+def test_formulario_cancelar_contrato_inicia_recolhido_e_abre_com_erro(client, operador):
+    contrato = ContratoFactory(status=Contrato.Status.FORMALIZADO)
+
+    inicial = client.get(reverse('contratos:detalhe', args=[contrato.pk])).content.decode()
+    assert 'id="encerrar-cancelar" class="collapse' in inicial
+    assert 'id="encerrar-cancelar" class="collapse show' not in inicial
+    assert 'data-bs-target="#encerrar-cancelar" aria-expanded="false"' in inicial
+
+    erro = client.post(
+        reverse('contratos:cancelar', args=[contrato.pk]), {'motivo': ''}
+    ).content.decode()
+    assert 'id="encerrar-cancelar" class="collapse show' in erro
+    assert 'data-bs-target="#encerrar-cancelar" aria-expanded="true"' in erro
+    contrato.refresh_from_db()
+    assert contrato.status == Contrato.Status.FORMALIZADO

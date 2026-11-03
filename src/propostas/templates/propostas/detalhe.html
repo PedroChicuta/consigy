@@ -59,7 +59,22 @@
 
   {% if contratos %}
     <h2 class="h5">Contrato</h2>
-    {% include 'contratos/partials/_linhas.html' %}
+    {% for contrato in contratos %}
+      <div class="card shadow-sm mb-4">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div>
+            <div class="fw-semibold mb-1">
+              Contrato #{{ contrato.pk }}
+              <span class="badge text-bg-secondary">{{ contrato.get_status_display }}</span>
+            </div>
+            <div class="text-body-secondary small">
+              Valor: R$ {{ contrato.valor }} · Valor liberado: R$ {{ contrato.valor_liberado }} · Prazo: {{ contrato.prazo }} meses · Parcela: R$ {{ contrato.parcela }} · Pago em: {{ contrato.data_pagamento|date:'d/m/Y'|default:'—' }}
+            </div>
+          </div>
+          <a class="btn btn-primary" href="{% url 'contratos:detalhe' contrato.pk %}">Abrir Contrato #{{ contrato.pk }}</a>
+        </div>
+      </div>
+    {% endfor %}
   {% endif %}
 
   {% if perms.propostas.change_proposta %}
@@ -72,19 +87,37 @@
     <p>{{ proposta.observacoes|default:'—'|linebreaksbr }}</p>
   {% endif %}
   {% if not proposta.encerrada and perms.propostas.change_proposta %}
-    {% if proposta.status != 'aprovada' or perms.propostas.cancelar_proposta_aprovada %}
-      <h2 class="h5">Encerrar</h2>
-      <div class="formulario row g-3 mb-4">
+    <h2 class="h5">Encerrar</h2>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      {% if proposta.status != 'digitada' %}
+        <button class="btn btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#encerrar-recusar" aria-expanded="{% if form_recusar.errors %}true{% else %}false{% endif %}" aria-controls="encerrar-recusar">
+          Recusada pelo Banco
+        </button>
+      {% endif %}
+      {% if proposta.status != 'aprovada' or perms.propostas.cancelar_proposta_aprovada %}
+        <button class="btn btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#encerrar-cancelar" aria-expanded="{% if form_cancelar.errors %}true{% else %}false{% endif %}" aria-controls="encerrar-cancelar">
+          Cancelar por desistência
+        </button>
+      {% endif %}
+    </div>
+    <div class="formulario row g-3 mb-4">
+      {% if proposta.status != 'digitada' %}
         <div class="col-md-6">
-          {% url 'propostas:recusar' proposta.pk as acao %}
-          {% include 'formularios/_cartao.html' with form=form_recusar acao=acao titulo='Recusada pelo Banco' rotulo='Recusar Proposta' estilo_botao='btn-outline-danger' validar_no_navegador=True %}
+          <div id="encerrar-recusar" class="collapse{% if form_recusar.errors %} show{% endif %}">
+            {% url 'propostas:recusar' proposta.pk as acao %}
+            {% include 'formularios/_cartao.html' with form=form_recusar acao=acao titulo='Recusada pelo Banco' rotulo='Recusar Proposta' estilo_botao='btn-outline-danger' validar_no_navegador=True %}
+          </div>
         </div>
+      {% endif %}
+      {% if proposta.status != 'aprovada' or perms.propostas.cancelar_proposta_aprovada %}
         <div class="col-md-6">
-          {% url 'propostas:cancelar' proposta.pk as acao %}
-          {% include 'formularios/_cartao.html' with form=form_cancelar acao=acao titulo='Desistência' rotulo='Cancelar Proposta' estilo_botao='btn-outline-danger' validar_no_navegador=True %}
+          <div id="encerrar-cancelar" class="collapse{% if form_cancelar.errors %} show{% endif %}">
+            {% url 'propostas:cancelar' proposta.pk as acao %}
+            {% include 'formularios/_cartao.html' with form=form_cancelar acao=acao titulo='Desistência' rotulo='Cancelar Proposta' estilo_botao='btn-outline-danger' validar_no_navegador=True %}
+          </div>
         </div>
-      </div>
-    {% endif %}
+      {% endif %}
+    </div>
   {% endif %}
   {% if historico %}
     <h2 class="h5 mt-4">Histórico de status</h2>

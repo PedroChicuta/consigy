@@ -68,23 +68,28 @@ def _buscar(pk):
     )
 
 
+def _contexto_detalhe(contrato, *, usuario=None, **extra):
+    historico = None
+    if usuario is not None and usuario.has_perm('contratos.view_historicalcontrato'):
+        historico = selectors.historico_do_contrato(contrato=contrato)
+    return {
+        'contrato': contrato,
+        'historico': historico,
+        'form_cancelar': MotivoForm(),
+        'form_pagamento': PagamentoForm(),
+        **extra,
+    }
+
+
 class DetalheView(PermissaoNecessariaMixin, View):
     permission_required = 'contratos.view_contrato'
 
     def get(self, request, pk):
         contrato = _buscar(pk)
-        historico = None
-        if request.user.has_perm('contratos.view_historicalcontrato'):
-            historico = selectors.historico_do_contrato(contrato=contrato)
         return render(
             request,
             'contratos/detalhe.html',
-            {
-                'contrato': contrato,
-                'historico': historico,
-                'form_cancelar': MotivoForm(),
-                'form_pagamento': PagamentoForm(),
-            },
+            _contexto_detalhe(contrato, usuario=request.user),
         )
 
 
@@ -122,13 +127,17 @@ class CancelarView(PermissaoNecessariaMixin, View):
         form = MotivoForm(request.POST)
         if not form.is_valid():
             messages.error(request, 'Informe o motivo.')
+            return render(
+                request,
+                'contratos/detalhe.html',
+                _contexto_detalhe(contrato, usuario=request.user, form_cancelar=form),
+            )
+        try:
+            services.cancelar_contrato(
+                usuario=request.user, contrato=contrato, **form.cleaned_data
+            )
+        except ErroDeNegocio as erro:
+            messages.error(request, str(erro))
         else:
-            try:
-                services.cancelar_contrato(
-                    usuario=request.user, contrato=contrato, **form.cleaned_data
-                )
-            except ErroDeNegocio as erro:
-                messages.error(request, str(erro))
-            else:
-                messages.success(request, 'Contrato cancelado.')
+            messages.success(request, 'Contrato cancelado.')
         return redirect('contratos:detalhe', pk=contrato.pk)

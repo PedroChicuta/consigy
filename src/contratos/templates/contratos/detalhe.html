@@ -44,9 +44,14 @@
   </dl>
   {% if perms.contratos.change_contrato %}
     {% if contrato.status == 'formalizado' or contrato.status == 'averbado' %}
-      <div class="formulario mb-4">
-        {% url 'contratos:cancelar' contrato.pk as acao %}
-        {% include 'formularios/_cartao.html' with form=form_cancelar acao=acao titulo='Cancelar Contrato' rotulo='Cancelar Contrato' estilo_botao='btn-outline-danger' validar_no_navegador=True %}
+      <div class="mb-4">
+        <button class="btn btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#encerrar-cancelar" aria-expanded="{% if form_cancelar.errors %}true{% else %}false{% endif %}" aria-controls="encerrar-cancelar">
+          Cancelar Contrato
+        </button>
+        <div id="encerrar-cancelar" class="collapse{% if form_cancelar.errors %} show{% endif %} formulario mt-3">
+          {% url 'contratos:cancelar' contrato.pk as acao %}
+          {% include 'formularios/_cartao.html' with form=form_cancelar acao=acao titulo='Cancelar Contrato' rotulo='Cancelar Contrato' estilo_botao='btn-outline-danger' validar_no_navegador=True %}
+        </div>
       </div>
     {% endif %}
   {% endif %}

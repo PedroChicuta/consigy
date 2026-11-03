@@ -173,3 +173,74 @@ def test_supervisor_ve_historico_e_cancela_aprovada(client, db):
     assert proposta.status == Proposta.Status.CANCELADA
     conteudo = client.get(reverse('propostas:detalhe', args=[proposta.pk])).content.decode()
     assert 'Histórico de status' in conteudo
+
+
+@pytest.mark.parametrize(
+    'status_final',
+    [Proposta.Status.FORMALIZADA, Proposta.Status.RECUSADA, Proposta.Status.CANCELADA],
+)
+def test_propostas_finais_nao_exibem_opcoes_de_encerramento(client, operador, status_final):
+    proposta = PropostaFactory(status=status_final)
+
+    conteudo = client.get(reverse('propostas:detalhe', args=[proposta.pk])).content.decode()
+
+    assert 'Encerrar' not in conteudo
+    assert reverse('propostas:recusar', args=[proposta.pk]) not in conteudo
+    assert reverse('propostas:cancelar', args=[proposta.pk]) not in conteudo
+
+
+def test_proposta_digitada_exibe_apenas_cancelamento_e_rejeita_recusa(client, operador):
+    proposta = PropostaFactory(status=Proposta.Status.DIGITADA)
+
+    conteudo = client.get(reverse('propostas:detalhe', args=[proposta.pk])).content.decode()
+
+    assert reverse('propostas:cancelar', args=[proposta.pk]) in conteudo
+    assert reverse('propostas:recusar', args=[proposta.pk]) not in conteudo
+    assert 'Recusada pelo Banco' not in conteudo
+
+    client.post(reverse('propostas:recusar', args=[proposta.pk]), {'motivo': 'Tentativa'})
+    proposta.refresh_from_db()
+    assert proposta.status == Proposta.Status.DIGITADA
+
+
+def test_visibilidade_de_encerramento_de_enviada_ate_aprovada(client, operador):
+    enviada = PropostaFactory(status=Proposta.Status.ENVIADA)
+    html_enviada = client.get(reverse('propostas:detalhe', args=[enviada.pk])).content.decode()
+    assert reverse('propostas:recusar', args=[enviada.pk]) in html_enviada
+    assert reverse('propostas:cancelar', args=[enviada.pk]) in html_enviada
+
+    aprovada = PropostaFactory(status=Proposta.Status.APROVADA)
+    html_operador = client.get(reverse('propostas:detalhe', args=[aprovada.pk])).content.decode()
+    assert reverse('propostas:recusar', args=[aprovada.pk]) in html_operador
+    assert reverse('propostas:cancelar', args=[aprovada.pk]) not in html_operador
+
+    supervisor = get_user_model().objects.create_user(username='sup2', password='x')
+    supervisor.groups.add(Group.objects.get(name='Supervisor'))
+    client.force_login(supervisor)
+    html_supervisor = client.get(reverse('propostas:detalhe', args=[aprovada.pk])).content.decode()
+    assert reverse('propostas:recusar', args=[aprovada.pk]) in html_supervisor
+    assert reverse('propostas:cancelar', args=[aprovada.pk]) in html_supervisor
+
+
+def test_formularios_de_motivo_iniciam_recolhidos_e_permanecem_abertos_com_erro(client, operador):
+    proposta = PropostaFactory(status=Proposta.Status.ENVIADA)
+
+    inicial = client.get(reverse('propostas:detalhe', args=[proposta.pk])).content.decode()
+    assert 'id="encerrar-recusar" class="collapse"' in inicial
+    assert 'id="encerrar-cancelar" class="collapse"' in inicial
+    assert 'data-bs-target="#encerrar-recusar" aria-expanded="false"' in inicial
+    assert 'data-bs-target="#encerrar-cancelar" aria-expanded="false"' in inicial
+
+    erro_recusa = client.post(
+        reverse('propostas:recusar', args=[proposta.pk]), {'motivo': ''}
+    ).content.decode()
+    assert 'id="encerrar-recusar" class="collapse show"' in erro_recusa
+    assert 'data-bs-target="#encerrar-recusar" aria-expanded="true"' in erro_recusa
+    assert 'id="encerrar-cancelar" class="collapse"' in erro_recusa
+
+    erro_cancelamento = client.post(
+        reverse('propostas:cancelar', args=[proposta.pk]), {'motivo': '   '}
+    ).content.decode()
+    assert 'id="encerrar-cancelar" class="collapse show"' in erro_cancelamento
+    assert 'data-bs-target="#encerrar-cancelar" aria-expanded="true"' in erro_cancelamento
+    assert 'id="encerrar-recusar" class="collapse"' in erro_cancelamento
