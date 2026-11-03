@@ -10,7 +10,7 @@ from contratos import selectors, services
 from contratos.forms import MotivoForm, PagamentoForm
 from contratos.models import Contrato
 from core.exceptions import ErroDeNegocio
-from propostas.models import Modalidade
+from propostas import selectors as propostas_selectors
 
 POR_PAGINA = 25
 
@@ -48,7 +48,7 @@ class ListaView(PermissaoNecessariaMixin, View):
             'status': status,
             'cliente': cliente,
             'modalidade': modalidade,
-            'modalidades': Modalidade.objects.all(),
+            'modalidades': propostas_selectors.listar_modalidades(),
             'pago_de': pago_de.isoformat() if pago_de else '',
             'pago_ate': pago_ate.isoformat() if pago_ate else '',
             'status_opcoes': Contrato.Status.choices,

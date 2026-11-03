@@ -9,7 +9,7 @@ from contratos import selectors as contratos_selectors
 from core.exceptions import ErroDeNegocio
 from propostas import selectors, services
 from propostas.exceptions import MargemAntigaSemConfirmacao
-from propostas.forms import MotivoForm, ObservacoesForm, PropostaForm
+from propostas.forms import ModalidadeForm, MotivoForm, ObservacoesForm, PropostaForm
 from propostas.models import Modalidade, Proposta
 
 POR_PAGINA = 25
@@ -38,7 +38,7 @@ class ListaView(PermissaoNecessariaMixin, View):
             'status': status,
             'banco': banco,
             'modalidade': modalidade,
-            'modalidades': Modalidade.objects.all(),
+            'modalidades': selectors.listar_modalidades(),
             'cliente': cliente,
             'status_opcoes': Proposta.Status.choices,
             'bancos': bancos_selectors.listar_bancos(),
@@ -264,3 +264,103 @@ class CancelarView(_EncerrarView):
 
     def encerrar(self, **kwargs):
         services.cancelar_proposta(**kwargs)
+
+
+class ModalidadeListaView(PermissaoNecessariaMixin, View):
+    permission_required = 'propostas.view_modalidade'
+
+    def get(self, request):
+        return render(
+            request,
+            'propostas/modalidades/lista.html',
+            {'modalidades': selectors.listar_modalidades()},
+        )
+
+
+class ModalidadeCriarView(PermissaoNecessariaMixin, View):
+    permission_required = 'propostas.add_modalidade'
+
+    def get(self, request):
+        return render(request, 'propostas/modalidades/form.html', {'form': ModalidadeForm()})
+
+    def post(self, request):
+        form = ModalidadeForm(request.POST)
+        if form.is_valid():
+            try:
+                services.criar_modalidade(usuario=request.user, **form.cleaned_data)
+            except ErroDeNegocio as erro:
+                form.add_error(None, str(erro))
+            else:
+                messages.success(request, 'Modalidade cadastrada.')
+                return redirect('modalidades:lista')
+        return render(request, 'propostas/modalidades/form.html', {'form': form})
+
+
+class ModalidadeEditarView(PermissaoNecessariaMixin, View):
+    permission_required = 'propostas.change_modalidade'
+
+    def get(self, request, pk):
+        modalidade = get_object_or_404(Modalidade, pk=pk)
+        form = ModalidadeForm(
+            initial={
+                'nome': modalidade.nome,
+                'envolve_portabilidade': modalidade.envolve_portabilidade,
+            }
+        )
+        return render(
+            request,
+            'propostas/modalidades/form.html',
+            {'form': form, 'modalidade': modalidade},
+        )
+
+    def post(self, request, pk):
+        modalidade = get_object_or_404(Modalidade, pk=pk)
+        form = ModalidadeForm(request.POST)
+        if form.is_valid():
+            try:
+                services.editar_modalidade(
+                    usuario=request.user, modalidade=modalidade, **form.cleaned_data
+                )
+            except ErroDeNegocio as erro:
+                form.add_error(None, str(erro))
+            else:
+                messages.success(request, 'Modalidade atualizada.')
+                return redirect('modalidades:lista')
+        return render(
+            request,
+            'propostas/modalidades/form.html',
+            {'form': form, 'modalidade': modalidade},
+        )
+
+
+class _MudarSituacaoModalidadeView(PermissaoNecessariaMixin, View):
+    permission_required = 'propostas.change_modalidade'
+    http_method_names = ['post']
+    mensagem = ''
+
+    def executar(self, *, usuario, modalidade):
+        raise NotImplementedError
+
+    def post(self, request, pk):
+        modalidade = get_object_or_404(Modalidade, pk=pk)
+        try:
+            self.executar(usuario=request.user, modalidade=modalidade)
+        except ErroDeNegocio as erro:
+            messages.error(request, str(erro))
+        else:
+            messages.success(request, self.mensagem)
+        return redirect('modalidades:lista')
+
+
+class ModalidadeInativarView(_MudarSituacaoModalidadeView):
+    mensagem = 'Modalidade inativada.'
+
+    def executar(self, *, usuario, modalidade):
+        services.inativar_modalidade(usuario=usuario, modalidade=modalidade)
+
+
+class ModalidadeReativarView(_MudarSituacaoModalidadeView):
+    mensagem = 'Modalidade reativada.'
+
+    def executar(self, *, usuario, modalidade):
+        services.reativar_modalidade(usuario=usuario, modalidade=modalidade)

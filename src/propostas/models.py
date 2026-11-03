@@ -7,7 +7,7 @@ from beneficios.models import Beneficio
 
 
 class Modalidade(models.Model):
-    """Tipo de operação de crédito de uma Proposta; cadastro mantido pelo Supervisor no admin."""
+    """Tipo de operação de crédito de uma Proposta; cadastro mantido pelo Supervisor."""
 
     nome = models.CharField(max_length=100, unique=True)
     ativo = models.BooleanField(default=True)

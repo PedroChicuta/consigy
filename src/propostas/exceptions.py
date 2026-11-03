@@ -17,6 +17,26 @@ class ModalidadeInativa(ErroDeNegocio):
         super().__init__('A Modalidade está inativa; escolha uma Modalidade ativa.')
 
 
+class NomeDeModalidadeObrigatorio(ErroDeNegocio):
+    def __init__(self):
+        super().__init__('Informe o nome da Modalidade.')
+
+
+class NomeDeModalidadeDuplicado(ErroDeNegocio):
+    def __init__(self):
+        super().__init__('Já existe uma Modalidade com este nome.')
+
+
+class ModalidadeJaInativa(ErroDeNegocio):
+    def __init__(self):
+        super().__init__('A Modalidade já está inativa.')
+
+
+class ModalidadeJaAtiva(ErroDeNegocio):
+    def __init__(self):
+        super().__init__('A Modalidade já está ativa.')
+
+
 class CondicoesInvalidas(ErroDeNegocio):
     pass
 

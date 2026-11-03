@@ -3,6 +3,7 @@ from django.db.models import Q
 
 from bancos.models import Banco
 from beneficios.models import Beneficio
+from propostas import selectors
 from propostas.models import Modalidade
 
 
@@ -37,17 +38,18 @@ class PropostaForm(forms.Form):
     def __init__(self, *args, proposta=None, **kwargs):
         super().__init__(*args, **kwargs)
         filtro_beneficio, filtro_banco = Q(ativo=True), Q(ativo=True)
-        filtro_modalidade = Q(ativo=True)
         if proposta is not None:
-            filtro_modalidade |= Q(pk=proposta.modalidade_id)
             # Mantém a escolha atual, mesmo que tenha sido inativada depois da digitação.
             filtro_beneficio |= Q(pk=proposta.beneficio_id)
             filtro_banco |= Q(pk=proposta.banco_id)
+            modalidades = Modalidade.objects.filter(Q(ativo=True) | Q(pk=proposta.modalidade_id))
+        else:
+            modalidades = selectors.modalidades_ativas()
         self.fields['beneficio'].queryset = Beneficio.objects.select_related('cliente').filter(
             filtro_beneficio
         )
         self.fields['banco'].queryset = Banco.objects.filter(filtro_banco)
-        self.fields['modalidade'].queryset = Modalidade.objects.filter(filtro_modalidade)
+        self.fields['modalidade'].queryset = modalidades
 
 
 class ObservacoesForm(forms.Form):
@@ -60,3 +62,8 @@ class ObservacoesForm(forms.Form):
 
 class MotivoForm(forms.Form):
     motivo = forms.CharField(label='Motivo')
+
+
+class ModalidadeForm(forms.Form):
+    nome = forms.CharField(label='Nome', max_length=100)
+    envolve_portabilidade = forms.BooleanField(label='Envolve portabilidade', required=False)

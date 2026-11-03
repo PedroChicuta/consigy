@@ -74,7 +74,11 @@ def test_erros_gerais_aparecem_em_alerta():
 @pytest.fixture
 def client_operador(client, db):
     user = get_user_model().objects.create_user(username='maria', password='x')
-    for app, codigo in (('clientes', 'add_cliente'), ('bancos', 'add_banco')):
+    for app, codigo in (
+        ('clientes', 'add_cliente'),
+        ('bancos', 'add_banco'),
+        ('propostas', 'add_modalidade'),
+    ):
         user.user_permissions.add(
             Permission.objects.get(content_type__app_label=app, codename=codigo)
         )
@@ -82,7 +86,7 @@ def client_operador(client, db):
     return client
 
 
-@pytest.mark.parametrize('rota', ['clientes:criar', 'bancos:criar'])
+@pytest.mark.parametrize('rota', ['clientes:criar', 'bancos:criar', 'modalidades:criar'])
 def test_paginas_de_formulario_seguem_o_padrao(client_operador, rota):
     html = client_operador.get(reverse(rota)).content.decode()
 

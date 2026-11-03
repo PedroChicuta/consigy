@@ -88,6 +88,7 @@ def test_itens_ficam_nos_grupos_cadastros_e_processos(client):
             [
                 'clientes.view_cliente',
                 'bancos.view_banco',
+                'propostas.view_modalidade',
                 'propostas.view_proposta',
                 'contratos.view_contrato',
             ]
@@ -97,8 +98,38 @@ def test_itens_ficam_nos_grupos_cadastros_e_processos(client):
     menu = _menu(client.get(reverse('inicio:index')).content.decode())
 
     cadastros, processos = menu.index('Cadastros'), menu.index('Processos')
-    assert cadastros < menu.index('Clientes') < menu.index('Bancos') < processos
+    assert (
+        cadastros
+        < menu.index('Clientes')
+        < menu.index('Bancos')
+        < menu.index('Modalidades')
+        < processos
+    )
     assert processos < menu.index('Propostas') < menu.index('Contratos')
+
+
+@pytest.mark.django_db
+def test_modalidades_no_menu_so_para_quem_tem_view_modalidade_e_destaca_rota(client):
+    from django.contrib.auth.models import Group
+
+    operador = get_user_model().objects.create_user(username='op', password='x')
+    operador.groups.add(Group.objects.get(name='Operador'))
+    client.force_login(operador)
+    menu_operador = _menu(client.get(reverse('inicio:index')).content.decode())
+    assert 'Modalidades' not in menu_operador
+
+    supervisor = get_user_model().objects.create_user(username='sup', password='x')
+    supervisor.groups.add(Group.objects.get(name='Supervisor'))
+    client.force_login(supervisor)
+
+    url_lista = reverse('modalidades:lista')
+    link_ativo = f'class="menu-link ativo" href="{url_lista}" aria-current="page">Modalidades<'
+    menu_lista = _menu(client.get(url_lista).content.decode())
+    assert link_ativo in menu_lista
+    assert f'class="menu-link" href="{reverse("propostas:lista")}">Propostas<' in menu_lista
+
+    menu_criar = _menu(client.get(reverse('modalidades:criar')).content.decode())
+    assert link_ativo in menu_criar
 
 
 @pytest.mark.django_db

@@ -1,4 +1,5 @@
-from django.db import transaction
+from django.db import IntegrityError, transaction
+from django.db.models.functions import Lower
 
 from beneficios.selectors import margem_vigente
 from contratos.services import criar_contrato
@@ -10,13 +11,17 @@ from propostas.exceptions import (
     CondicoesInvalidas,
     MargemAntigaSemConfirmacao,
     ModalidadeInativa,
+    ModalidadeJaAtiva,
+    ModalidadeJaInativa,
     MotivoObrigatorio,
+    NomeDeModalidadeDuplicado,
+    NomeDeModalidadeObrigatorio,
     ParcelaAcimaDaMargem,
     PropostaNaoDigitada,
     PropostaTravada,
     TransicaoInvalida,
 )
-from propostas.models import FINAIS, Proposta
+from propostas.models import FINAIS, Modalidade, Proposta
 
 CAMPOS_POSITIVOS = {
     'valor': 'O valor',
@@ -29,6 +34,62 @@ CAMPOS_POSITIVOS = {
 def _salvar(proposta, *, usuario):
     proposta._history_user = usuario
     proposta.save()
+
+
+def _validar_nome_modalidade(*, nome, modalidade=None):
+    if not nome:
+        raise NomeDeModalidadeObrigatorio
+    outras = Modalidade.objects.all()
+    if modalidade is not None:
+        outras = outras.exclude(pk=modalidade.pk)
+    if outras.annotate(_nome_lower=Lower('nome')).filter(_nome_lower=nome.lower()).exists():
+        raise NomeDeModalidadeDuplicado
+
+
+def _salvar_modalidade(modalidade, *, usuario):
+    modalidade._history_user = usuario
+    try:
+        with transaction.atomic():
+            modalidade.save()
+    except IntegrityError:
+        raise NomeDeModalidadeDuplicado from None
+
+
+@transaction.atomic
+def criar_modalidade(*, usuario, nome, envolve_portabilidade=False):
+    nome = (nome or '').strip()
+    _validar_nome_modalidade(nome=nome)
+    modalidade = Modalidade(nome=nome, envolve_portabilidade=bool(envolve_portabilidade))
+    _salvar_modalidade(modalidade, usuario=usuario)
+    return modalidade
+
+
+@transaction.atomic
+def editar_modalidade(*, usuario, modalidade, nome, envolve_portabilidade=False):
+    nome = (nome or '').strip()
+    _validar_nome_modalidade(nome=nome, modalidade=modalidade)
+    modalidade.nome = nome
+    modalidade.envolve_portabilidade = bool(envolve_portabilidade)
+    _salvar_modalidade(modalidade, usuario=usuario)
+    return modalidade
+
+
+@transaction.atomic
+def inativar_modalidade(*, usuario, modalidade):
+    if not modalidade.ativo:
+        raise ModalidadeJaInativa
+    modalidade.ativo = False
+    _salvar_modalidade(modalidade, usuario=usuario)
+    return modalidade
+
+
+@transaction.atomic
+def reativar_modalidade(*, usuario, modalidade):
+    if modalidade.ativo:
+        raise ModalidadeJaAtiva
+    modalidade.ativo = True
+    _salvar_modalidade(modalidade, usuario=usuario)
+    return modalidade
 
 
 def _validar_condicoes(*, valor, valor_liberado, prazo, parcela, taxa):

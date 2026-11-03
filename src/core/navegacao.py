@@ -13,6 +13,7 @@ _GRUPOS = (
         (
             ('Clientes', 'clientes', 'clientes.view_cliente'),
             ('Bancos', 'bancos', 'bancos.view_banco'),
+            ('Modalidades', 'modalidades', 'propostas.view_modalidade'),
         ),
     ),
     (
