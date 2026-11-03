@@ -104,3 +104,47 @@ def test_formulario_cancelar_contrato_inicia_recolhido_e_abre_com_erro(client, o
     assert 'data-bs-target="#encerrar-cancelar" aria-expanded="true"' in erro
     contrato.refresh_from_db()
     assert contrato.status == Contrato.Status.FORMALIZADO
+
+
+@pytest.mark.django_db
+def test_colunas_de_cliente_e_identificadores_com_prefixo_nas_listagens_e_fichas(client, operador):
+    contrato = ContratoFactory(proposta__beneficio__cliente__nome='Helena Costa')
+    proposta = contrato.proposta
+    cliente = contrato.cliente
+    url_cliente = reverse('clientes:detalhe', args=[cliente.pk])
+    url_proposta = reverse('propostas:detalhe', args=[proposta.pk])
+    url_contrato = reverse('contratos:detalhe', args=[contrato.pk])
+
+    lista_contratos = client.get(reverse('contratos:lista')).content.decode()
+    assert '<th>Cliente</th>' in lista_contratos
+    assert f'<a href="{url_cliente}">Helena Costa</a>' in lista_contratos
+    assert f'<a href="{url_contrato}">#{contrato.pk}</a>' in lista_contratos
+    assert f'<a href="{url_proposta}">#{proposta.pk}</a>' in lista_contratos
+
+    parcial_contratos = client.get(
+        reverse('contratos:lista'), headers={'HX-Request': 'true'}
+    ).content.decode()
+    assert '<th>Cliente</th>' in parcial_contratos
+    assert f'<a href="{url_cliente}">Helena Costa</a>' in parcial_contratos
+
+    lista_propostas = client.get(reverse('propostas:lista')).content.decode()
+    assert '<th>Cliente</th>' in lista_propostas
+    assert f'<a href="{url_cliente}">Helena Costa</a>' in lista_propostas
+    assert f'<a href="{url_proposta}">#{proposta.pk}</a>' in lista_propostas
+
+    detalhe_contrato = client.get(url_contrato).content.decode()
+    assert f'<a href="{url_proposta}">#{proposta.pk}</a>' in detalhe_contrato
+
+    ficha_cliente = client.get(url_cliente).content.decode()
+    assert '<th>Cliente</th>' not in ficha_cliente
+    tabela_propostas = ficha_cliente.split('<h2 class="h5 mb-0">Propostas</h2>')[1].split(
+        '</table>'
+    )[0]
+    tabela_contratos = ficha_cliente.split('<h2 class="h5 mt-4">Contratos</h2>')[1].split(
+        '</table>'
+    )[0]
+    assert 'Helena Costa' not in tabela_propostas
+    assert 'Helena Costa' not in tabela_contratos
+    assert f'<a href="{url_proposta}">#{proposta.pk}</a>' in tabela_propostas
+    assert f'<a href="{url_contrato}">#{contrato.pk}</a>' in tabela_contratos
+    assert f'<a href="{url_proposta}">#{proposta.pk}</a>' in tabela_contratos

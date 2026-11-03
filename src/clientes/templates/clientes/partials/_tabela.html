@@ -6,7 +6,7 @@
         <tr>
           <td><a href="{% url 'clientes:detalhe' cliente.pk %}">{{ cliente.nome }}</a></td>
           <td>{{ cliente.cpf_mascarado }}</td>
-          <td>{{ cliente.telefone }}</td>
+          <td>{{ cliente.telefone|telefone }}</td>
           <td>{% if cliente.ativo %}Ativo{% else %}<span class="text-muted">Inativo</span>{% endif %}</td>
         </tr>
       {% empty %}

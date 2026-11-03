@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -244,3 +245,14 @@ def test_formularios_de_motivo_iniciam_recolhidos_e_permanecem_abertos_com_erro(
     assert 'id="encerrar-cancelar" class="collapse show"' in erro_cancelamento
     assert 'data-bs-target="#encerrar-cancelar" aria-expanded="true"' in erro_cancelamento
     assert 'id="encerrar-recusar" class="collapse"' in erro_cancelamento
+
+
+def test_envio_com_parcela_acima_da_margem_mostra_valores_em_reais(client, operador):
+    proposta = PropostaFactory(parcela=Decimal('1400.00'))
+    MargemFactory(beneficio=proposta.beneficio, valor=Decimal('1350.00'))
+
+    resposta = client.post(reverse('propostas:enviar', args=[proposta.pk]), follow=True)
+
+    conteudo = resposta.content.decode()
+    assert 'R$ 1.400,00' in conteudo
+    assert 'R$ 1.350,00' in conteudo

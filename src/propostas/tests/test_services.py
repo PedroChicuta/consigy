@@ -239,13 +239,13 @@ def test_parcela_igual_a_margem_pode_ser_enviada(usuario):
 
 
 def test_bloqueia_parcela_acima_da_margem_com_valores_na_mensagem(usuario):
-    proposta = _proposta_com_margem(parcela='400.00', margem='350.00')
+    proposta = _proposta_com_margem(parcela='1400.00', margem='1350.00')
 
     with pytest.raises(ParcelaAcimaDaMargem) as erro:
         services.enviar_proposta(usuario=usuario, proposta=proposta)
 
-    assert '400.00' in str(erro.value)
-    assert '350.00' in str(erro.value)
+    assert 'R$ 1.400,00' in str(erro.value)
+    assert 'R$ 1.350,00' in str(erro.value)
     proposta.refresh_from_db()
     assert proposta.status == Proposta.Status.DIGITADA
 

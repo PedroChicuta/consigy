@@ -1,4 +1,5 @@
 from core.exceptions import ErroDeNegocio
+from core.formatacao import formatar_moeda
 
 
 class BeneficioInativo(ErroDeNegocio):
@@ -33,8 +34,8 @@ class BeneficioSemMargem(ErroDeNegocio):
 class ParcelaAcimaDaMargem(ErroDeNegocio):
     def __init__(self, *, parcela, margem):
         super().__init__(
-            f'A parcela (R$ {parcela}) é maior que a Margem vigente (R$ {margem}); '
-            'ajuste as condições antes de enviar.'
+            f'A parcela ({formatar_moeda(parcela)}) é maior que a Margem vigente '
+            f'({formatar_moeda(margem)}); ajuste as condições antes de enviar.'
         )
 
 

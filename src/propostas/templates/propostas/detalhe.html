@@ -47,10 +47,10 @@
     <dd class="col-sm-9"><a href="{% url 'beneficios:detalhe' proposta.beneficio.pk %}">{{ proposta.beneficio.numero }}</a></dd>
     <dt class="col-sm-3">Banco</dt><dd class="col-sm-9">{{ proposta.banco.nome }}</dd>
     <dt class="col-sm-3">Modalidade</dt><dd class="col-sm-9">{{ proposta.modalidade.nome }}</dd>
-    <dt class="col-sm-3">Valor</dt><dd class="col-sm-9">R$ {{ proposta.valor }}</dd>
-    <dt class="col-sm-3">Valor liberado</dt><dd class="col-sm-9">R$ {{ proposta.valor_liberado }}</dd>
+    <dt class="col-sm-3">Valor</dt><dd class="col-sm-9">{{ proposta.valor|moeda }}</dd>
+    <dt class="col-sm-3">Valor liberado</dt><dd class="col-sm-9">{{ proposta.valor_liberado|moeda }}</dd>
     <dt class="col-sm-3">Prazo</dt><dd class="col-sm-9">{{ proposta.prazo }} meses</dd>
-    <dt class="col-sm-3">Parcela</dt><dd class="col-sm-9">R$ {{ proposta.parcela }}</dd>
+    <dt class="col-sm-3">Parcela</dt><dd class="col-sm-9">{{ proposta.parcela|moeda }}</dd>
     <dt class="col-sm-3">Taxa</dt><dd class="col-sm-9">{{ proposta.taxa }}% a.m.</dd>
     {% if proposta.motivo %}<dt class="col-sm-3">Motivo</dt><dd class="col-sm-9">{{ proposta.motivo|linebreaksbr }}</dd>{% endif %}
     <dt class="col-sm-3">Operador</dt><dd class="col-sm-9">{{ proposta.operador }}</dd>
@@ -68,7 +68,7 @@
               <span class="badge text-bg-secondary">{{ contrato.get_status_display }}</span>
             </div>
             <div class="text-body-secondary small">
-              Valor: R$ {{ contrato.valor }} · Valor liberado: R$ {{ contrato.valor_liberado }} · Prazo: {{ contrato.prazo }} meses · Parcela: R$ {{ contrato.parcela }} · Pago em: {{ contrato.data_pagamento|date:'d/m/Y'|default:'—' }}
+              Valor: {{ contrato.valor|moeda }} · Valor liberado: {{ contrato.valor_liberado|moeda }} · Prazo: {{ contrato.prazo }} meses · Parcela: {{ contrato.parcela|moeda }} · Pago em: {{ contrato.data_pagamento|date:'d/m/Y'|default:'—' }}
             </div>
           </div>
           <a class="btn btn-primary" href="{% url 'contratos:detalhe' contrato.pk %}">Abrir Contrato #{{ contrato.pk }}</a>

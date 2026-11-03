@@ -20,11 +20,13 @@ def test_listas_e_detalhes_mostram_valor_liberado(client, operador):
     proposta = PropostaFactory(valor_liberado=Decimal('8123.45'))
     contrato = ContratoFactory(valor_liberado=Decimal('7654.32'))
 
-    assert '8123,45' in client.get(reverse('propostas:lista')).content.decode()
+    assert 'R$ 8.123,45' in client.get(reverse('propostas:lista')).content.decode()
     assert (
-        '8123,45' in client.get(reverse('propostas:detalhe', args=[proposta.pk])).content.decode()
+        'R$ 8.123,45'
+        in client.get(reverse('propostas:detalhe', args=[proposta.pk])).content.decode()
     )
-    assert '7654,32' in client.get(reverse('contratos:lista')).content.decode()
+    assert 'R$ 7.654,32' in client.get(reverse('contratos:lista')).content.decode()
     assert (
-        '7654,32' in client.get(reverse('contratos:detalhe', args=[contrato.pk])).content.decode()
+        'R$ 7.654,32'
+        in client.get(reverse('contratos:detalhe', args=[contrato.pk])).content.decode()
     )
