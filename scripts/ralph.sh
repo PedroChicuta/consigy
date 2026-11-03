@@ -175,6 +175,7 @@ for i in $(seq 1 "$MAX"); do
   else
     cmd=(
       agy -p "$PROMPT"
+      --dangerously-skip-permissions
       --mode accept-edits
       --settings "$AGY_SETTINGS"
     )
