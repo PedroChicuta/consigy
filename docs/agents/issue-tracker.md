@@ -13,13 +13,16 @@ Issues and specs for this repo live as GitHub issues. Prefer the **GitHub MCP se
 ## Conventions
 
 - **Create an issue**:
-  - MCP: `issue_write` (`method: "create"`, `owner`, `repo`, `title`, `body`, optional `labels`, `assignees`).
+  - MCP (Claude): `issue_write` (`method: "create"`, `owner`, `repo`, `title`, `body`, optional `labels`, `assignees`).
+  - MCP (Antigravity): `create_issue` (`owner`, `repo`, `title`, `body`, optional `labels`, `assignees`).
   - `gh`: `gh issue create --title "..." --body "..."` (use a heredoc for multi-line bodies).
 - **Read an issue**:
-  - MCP: `issue_read` (`method: "get"`, `owner`, `repo`, `issue_number`) plus `issue_read` (`method: "get_comments"`) when comments are needed.
+  - MCP (Claude): `issue_read` (`method: "get"`, `owner`, `repo`, `issue_number`) plus `issue_read` (`method: "get_comments"`) when comments are needed.
+  - MCP (Antigravity): `get_issue` (`owner`, `repo`, `issue_number`).
   - `gh`: `gh issue view <number> --json number,title,body,labels,comments`.
 - **List issues**:
-  - MCP: `list_issues` (`owner`, `repo`, `state: "OPEN"`, optional `labels`).
+  - MCP (Claude): `list_issues` (`owner`, `repo`, `state: "OPEN"`, optional `labels`).
+  - MCP (Antigravity): `list_issues` (`owner`, `repo`, `state: "open"`, `direction: "asc"`, optional `labels`).
   - `gh`: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'`.
 - **Make an issue a sub-issue of a parent**:
   - MCP: `sub_issue_write` (`method: "add"`, `owner`, `repo`, `issue_number: <parent>`, `sub_issue_id: <child-db-id>`). Without sub-issues, put `Part of #<parent>` at the top of the child body.
@@ -28,10 +31,12 @@ Issues and specs for this repo live as GitHub issues. Prefer the **GitHub MCP se
   - MCP: `add_issue_comment` (`owner`, `repo`, `issue_number`, `body`).
   - `gh`: `gh issue comment <number> --body "..."`.
 - **Apply / remove labels or assignees**:
-  - MCP: `issue_write` (`method: "update"`, `owner`, `repo`, `issue_number`, `labels: [...]` / `assignees: [...]`).
+  - MCP (Claude): `issue_write` (`method: "update"`, `owner`, `repo`, `issue_number`, `labels: [...]` / `assignees: [...]`).
+  - MCP (Antigravity): `update_issue` (`owner`, `repo`, `issue_number`, `labels: [...]` / `assignees: [...]`).
   - `gh`: `gh issue edit <number> --add-label "..."` / `--remove-label "..."` / `--add-assignee ...`.
 - **Close**:
-  - MCP: `add_issue_comment` with the summary (if closing with a comment), then `issue_write` (`method: "update"`, `state: "closed"`, `state_reason: "completed"`).
+  - MCP (Claude): `add_issue_comment` with the summary (if closing with a comment), then `issue_write` (`method: "update"`, `state: "closed"`, `state_reason: "completed"`).
+  - MCP (Antigravity): `add_issue_comment` with the summary (if closing with a comment), then `update_issue` (`state: "closed"`).
   - `gh`: `gh issue close <number> --comment "..."`.
 
 ## Pull requests as a triage surface

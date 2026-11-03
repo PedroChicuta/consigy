@@ -111,29 +111,39 @@ mkdir -p "$LOG_DIR"
 
 if [[ $AGENT == 'claude' ]]; then
   MCP_INSTRUCAO="Use as ferramentas do MCP do GitHub (mcp__github__*) no repo ${owner}/${repo}."
+  LISTAR_INSTRUCAO='list_issues, state OPEN'
+  LER_INSTRUCAO='issue_read'
+  REIVINDICAR_INSTRUCAO="issue_write (update) com assignees [\"${owner}\"]"
+  FECHAR_INSTRUCAO='issue_write (update) com state closed e state_reason completed'
+  DESATRIBUIR_INSTRUCAO='issue_write (update) com assignees []'
   IMPLEMENT_INSTRUCAO="Rode /implement nessa issue (leia CLAUDE.md, GLOSSARY.md e os ADRs relevantes; use /tdd e rode ruff/pytest)."
 else
   MCP_INSTRUCAO="Use as ferramentas do servidor MCP \"github\" (via call_mcp_tool com ServerName \"github\" ou mcp_github_*) no repo ${owner}/${repo}."
-  IMPLEMENT_INSTRUCAO="Siga a skill implement (/implement) nessa issue (leia AGENTS.md, GLOSSARY.md, docs/agents/issue-tracker.md e os ADRs relevantes; leia e aplique a skill tdd e rode ruff/pytest)."
+  LISTAR_INSTRUCAO='list_issues com state "open" e direction "asc"'
+  LER_INSTRUCAO='get_issue'
+  REIVINDICAR_INSTRUCAO="update_issue com assignees [\"${owner}\"]"
+  FECHAR_INSTRUCAO='update_issue com state "closed"'
+  DESATRIBUIR_INSTRUCAO='update_issue com assignees []'
+  IMPLEMENT_INSTRUCAO="Implemente essa issue (leia AGENTS.md, GLOSSARY.md, docs/agents/issue-tracker.md e os ADRs relevantes em docs/adr/; leia e aplique a skill tdd e rode ruff/pytest). NÃO invoque subagentes (invoke_subagent): faça toda a leitura, implementação e revisão diretamente nesta sessão."
 fi
 
 read -r -d '' PROMPT <<EOF || true
 Você está em um loop automatizado (Ralph). Faça exatamente UMA issue e pare.
 ${MCP_INSTRUCAO}
 
-1. Liste as issues abertas (list_issues, state OPEN). Escolha a de menor
+1. Liste as issues abertas (${LISTAR_INSTRUCAO}). Escolha a de menor
    número que: não tem assignee, não tem a label ready-for-human e não tem
    bloqueio aberto (a linha "Blocked by: #N" no corpo ou nos comentários só
-   pode citar issues já fechadas; confira com issue_read).
+   pode citar issues já fechadas; confira com ${LER_INSTRUCAO}).
 2. Se não existir nenhuma, responda apenas ${SENTINELA} (sozinho em uma linha) e pare.
-3. Reivindique: issue_write (update) com assignees ["${owner}"].
+3. Reivindique: ${REIVINDICAR_INSTRUCAO}.
 4. ${IMPLEMENT_INSTRUCAO} Commite na branch atual.
    Rode TUDO a partir da raiz do repositório, sem 'cd' e sem encadear
    comandos (só estes são permitidos): .venv/bin/pytest, .venv/bin/ruff
    check, .venv/bin/python src/manage.py makemigrations|migrate|check.
 5. Só se os testes e o lint passarem: add_issue_comment com o resumo e
-   issue_write (update) com state closed e state_reason completed.
-   Se não passarem, NÃO feche: remova o assignee (assignees []), comente o
+   ${FECHAR_INSTRUCAO}.
+   Se não passarem, NÃO feche: remova o assignee (${DESATRIBUIR_INSTRUCAO}), comente o
    motivo na issue e responda apenas 'FALHOU: <motivo em uma linha>'.
 EOF
 
@@ -149,6 +159,7 @@ guardar_stash_se_sujo() {
 
 for i in $(seq 1 "$MAX"); do
   log="$LOG_DIR/$(date +%Y%m%d-%H%M%S)-${AGENT}-$i.log"
+  head_antes=$(git rev-parse HEAD)
   echo "=== Iteração $i/$MAX (agente: $AGENT, branch: $branch) — log: $log ==="
 
   if [[ $AGENT == 'claude' ]]; then
@@ -184,6 +195,11 @@ for i in $(seq 1 "$MAX"); do
     guardar_stash_se_sujo "$i"
     echo "Iteração $i falhou: $(grep -m1 '^FALHOU' "$log")" >&2
     echo "Log completo: $log. Parando." >&2
+    exit 1
+  fi
+  if [[ $(git rev-parse HEAD) == "$head_antes" || -n $(git status --porcelain) ]]; then
+    guardar_stash_se_sujo "$i"
+    echo "Iteração $i encerrou sem criar commit limpo (verifique se uma issue ficou com assignee em aberto). Log completo: $log. Parando." >&2
     exit 1
   fi
 done
