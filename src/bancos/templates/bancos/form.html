@@ -1,5 +1,15 @@
 {% extends 'formularios/pagina.html' %}
 
 {% block titulo %}{% if banco %}Editar Banco{% else %}Novo Banco{% endif %} · Consignado{% endblock %}
+{% block breadcrumb %}
+  {% url 'bancos:lista' as url_bancos %}
+  {% if banco %}
+    {% with rotulo_atual='Editar '|add:banco.nome %}
+      {% include 'componentes/_breadcrumb.html' with n1='Bancos' u1=url_bancos atual=rotulo_atual %}
+    {% endwith %}
+  {% else %}
+    {% include 'componentes/_breadcrumb.html' with n1='Bancos' u1=url_bancos atual='Novo Banco' %}
+  {% endif %}
+{% endblock %}
 {% block titulo_formulario %}{% if banco %}Editar {{ banco.nome }}{% else %}Novo Banco{% endif %}{% endblock %}
 {% block url_cancelar %}{% url 'bancos:lista' %}{% endblock %}

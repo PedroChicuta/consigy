@@ -1,5 +1,14 @@
 {% extends 'formularios/pagina.html' %}
 
 {% block titulo %}{% if cliente %}Editar Cliente{% else %}Novo Cliente{% endif %} · Consignado{% endblock %}
+{% block breadcrumb %}
+  {% url 'clientes:lista' as url_clientes %}
+  {% if cliente %}
+    {% url 'clientes:detalhe' cliente.pk as url_cliente %}
+    {% include 'componentes/_breadcrumb.html' with n1='Clientes' u1=url_clientes n2=cliente.nome u2=url_cliente atual='Editar Cliente' %}
+  {% else %}
+    {% include 'componentes/_breadcrumb.html' with n1='Clientes' u1=url_clientes atual='Novo Cliente' %}
+  {% endif %}
+{% endblock %}
 {% block titulo_formulario %}{% if cliente %}Editar {{ cliente.nome }}{% else %}Novo Cliente{% endif %}{% endblock %}
 {% block url_cancelar %}{% if cliente %}{% url 'clientes:detalhe' cliente.pk %}{% else %}{% url 'clientes:lista' %}{% endif %}{% endblock %}

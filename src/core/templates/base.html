@@ -21,6 +21,7 @@
       {% for mensagem in messages %}
         <div class="alert alert-{% if mensagem.tags == 'error' %}danger{% else %}{{ mensagem.tags }}{% endif %}" role="alert">{{ mensagem }}</div>
       {% endfor %}
+      {% block breadcrumb %}{% include 'componentes/_breadcrumb.html' %}{% endblock %}
       {% block conteudo %}{% endblock %}
     </main>
   </div>

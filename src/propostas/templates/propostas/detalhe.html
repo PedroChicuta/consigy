@@ -2,6 +2,15 @@
 
 {% block titulo %}Proposta {{ proposta.pk }} · Consignado{% endblock %}
 
+{% block breadcrumb %}
+  {% url 'propostas:lista' as url_propostas %}
+  {% with pk_str=proposta.pk|stringformat:'s' %}
+    {% with rotulo_atual='Proposta '|add:pk_str %}
+      {% include 'componentes/_breadcrumb.html' with n1='Propostas' u1=url_propostas atual=rotulo_atual %}
+    {% endwith %}
+  {% endwith %}
+{% endblock %}
+
 {% block conteudo %}
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">Proposta {{ proposta.pk }}
@@ -9,7 +18,7 @@
     </h1>
     {% if proposta.status == 'digitada' and perms.propostas.change_proposta %}
       <div class="d-flex gap-2">
-        <a class="btn btn-outline-primary" href="{% url 'propostas:editar' proposta.pk %}">Editar</a>
+        <a class="btn btn-outline-primary" href="{% url 'propostas:editar' proposta.pk %}?next={{ request.path }}">Editar</a>
         <form method="post" action="{% url 'propostas:enviar' proposta.pk %}">
           {% csrf_token %}
           {% if pedir_confirmacao %}<input type="hidden" name="confirmar_margem_antiga" value="1">{% endif %}

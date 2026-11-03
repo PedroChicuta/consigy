@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
 {% comment %}
-  Página de formulário (ADR 0010). Blocos: `titulo` (aba), `titulo_formulario`,
-  `descricao_formulario` (opcional), `url_cancelar` e `rotulo_enviar` (padrão "Salvar").
+  Página de formulário (ADR 0010 e ADR 0012). Blocos: `titulo` (aba),
+  `titulo_formulario`, `descricao_formulario` (opcional), `url_cancelar`,
+  `acoes_extras` (opcional, ou via `acoes_extras` no contexto) e
+  `rotulo_enviar` (padrão "Salvar"). Respeita retorno contextual seguro (`?next=`).
 {% endcomment %}
 
 {% block conteudo %}
@@ -12,10 +14,16 @@
     </header>
     <form method="post" novalidate class="card shadow-sm">
       {% csrf_token %}
+      {% if url_retorno %}<input type="hidden" name="next" value="{{ url_retorno }}">{% endif %}
       <div class="card-body p-4">{{ form }}</div>
       <div class="card-footer formulario-acoes">
-        <a class="btn btn-link link-body-emphasis text-decoration-none" href="{% block url_cancelar %}{% endblock %}">Cancelar</a>
-        <button class="btn btn-primary" type="submit">{% block rotulo_enviar %}Salvar{% endblock %}</button>
+        <a class="btn btn-link link-body-emphasis text-decoration-none" href="{% if url_retorno %}{{ url_retorno }}{% else %}{% block url_cancelar %}{{ url_cancelar }}{% endblock %}{% endif %}">Cancelar</a>
+        {% block acoes_extras %}
+          {% for acao in acoes_extras %}
+            <button class="btn {{ acao.estilo|default:'btn-outline-primary' }}" type="submit" name="{{ acao.nome|default:'acao' }}" value="{{ acao.valor }}">{{ acao.rotulo }}</button>
+          {% endfor %}
+        {% endblock %}
+        <button class="btn btn-primary" type="submit"{% if valor_enviar %} name="acao" value="{{ valor_enviar }}"{% endif %}>{% block rotulo_enviar %}Salvar{% endblock %}</button>
       </div>
     </form>
   </div>
