@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views import View
 
 from accounts.permissions import PermissaoNecessariaMixin
@@ -12,11 +13,24 @@ from core.exceptions import ErroDeNegocio
 
 class CriarView(PermissaoNecessariaMixin, View):
     permission_required = 'beneficios.add_beneficio'
+    acoes_extras = [
+        {
+            'rotulo': 'Salvar e criar Proposta',
+            'valor': 'salvar_criar_proposta',
+            'estilo': 'btn-outline-primary',
+        }
+    ]
 
     def get(self, request, cliente_pk):
         cliente = get_object_or_404(Cliente, pk=cliente_pk)
         return render(
-            request, 'beneficios/form.html', {'form': BeneficioForm(), 'cliente': cliente}
+            request,
+            'beneficios/form.html',
+            {
+                'form': BeneficioForm(),
+                'cliente': cliente,
+                'acoes_extras': self.acoes_extras,
+            },
         )
 
     def post(self, request, cliente_pk):
@@ -24,13 +38,27 @@ class CriarView(PermissaoNecessariaMixin, View):
         form = BeneficioForm(request.POST)
         if form.is_valid():
             try:
-                services.criar_beneficio(usuario=request.user, cliente=cliente, **form.cleaned_data)
+                beneficio = services.criar_beneficio(
+                    usuario=request.user,
+                    cliente=cliente,
+                    **form.cleaned_data,
+                )
             except ErroDeNegocio as erro:
                 form.add_error(None, str(erro))
             else:
                 messages.success(request, 'Benefício cadastrado.')
+                if request.POST.get('acao') == 'salvar_criar_proposta':
+                    return redirect(f"{reverse('propostas:criar')}?beneficio={beneficio.pk}")
                 return redirect('clientes:detalhe', pk=cliente.pk)
-        return render(request, 'beneficios/form.html', {'form': form, 'cliente': cliente})
+        return render(
+            request,
+            'beneficios/form.html',
+            {
+                'form': form,
+                'cliente': cliente,
+                'acoes_extras': self.acoes_extras,
+            },
+        )
 
 
 def _contexto_detalhe(beneficio, form=None):

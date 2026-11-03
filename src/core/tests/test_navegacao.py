@@ -314,7 +314,9 @@ def test_links_de_ficha_propagam_next_e_cancelar_retorna_a_origem(client):
 
     url_editar_cliente = f'{reverse("clientes:editar", args=[cliente.pk])}?next={url_cliente}'
     url_novo_beneficio = f'{reverse("beneficios:criar", args=[cliente.pk])}?next={url_cliente}'
-    url_nova_proposta = f'{reverse("propostas:criar")}?next={url_cliente}'
+    url_nova_proposta = (
+        f'{reverse("propostas:criar")}?beneficio={proposta.beneficio.pk}&next={url_cliente}'
+    )
 
     assert f'href="{url_editar_cliente}"' in ficha_cliente
     assert f'href="{url_novo_beneficio}"' in ficha_cliente

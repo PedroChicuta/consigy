@@ -24,7 +24,15 @@ def _normalizar_numero(numero):
 
 
 @transaction.atomic
-def criar_beneficio(*, usuario, cliente, numero, especie):
+def criar_beneficio(
+    *,
+    usuario,
+    cliente,
+    numero,
+    especie,
+    margem_valor=None,
+    margem_data_consulta=None,
+):
     if not cliente.ativo:
         raise ClienteInativo
     numero = _normalizar_numero(numero)
@@ -39,6 +47,16 @@ def criar_beneficio(*, usuario, cliente, numero, especie):
     except IntegrityError:
         # Corrida com outro cadastro do mesmo número.
         raise NumeroDuplicado from None
+
+    if margem_valor is not None:
+        data_consulta = margem_data_consulta or datetime.date.today()
+        registrar_margem(
+            usuario=usuario,
+            beneficio=beneficio,
+            valor=margem_valor,
+            data_consulta=data_consulta,
+        )
+
     return beneficio
 
 

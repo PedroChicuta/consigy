@@ -43,6 +43,74 @@ def test_operador_cadastra_beneficio_e_ve_na_ficha(client, operador):
     assert '1234567890' in resposta.content.decode()
 
 
+def test_formulario_beneficio_exibe_botao_proposta_e_campos_margem(client, operador):
+    cliente = ClienteFactory()
+
+    resposta = client.get(reverse('beneficios:criar', args=[cliente.pk]))
+
+    conteudo = resposta.content.decode()
+    assert 'Salvar e criar Proposta' in conteudo
+    assert 'Valor da Margem' in conteudo
+    assert 'Data da consulta' in conteudo
+
+
+def test_operador_cadastra_beneficio_com_margem_inicial(client, operador):
+    cliente = ClienteFactory()
+    hoje = datetime.date.today()
+
+    resposta = client.post(
+        reverse('beneficios:criar', args=[cliente.pk]),
+        {
+            'numero': '1234567890',
+            'especie': 'pensao',
+            'margem_valor': '450.00',
+            'margem_data_consulta': hoje.isoformat(),
+        },
+        follow=True,
+    )
+
+    assert resposta.status_code == 200
+    beneficio = Beneficio.objects.get(numero='1234567890')
+    assert beneficio.margens.count() == 1
+    assert beneficio.margens.first().valor == 450
+
+
+def test_operador_cadastra_beneficio_com_salvar_e_criar_proposta_redireciona(client, operador):
+    cliente = ClienteFactory()
+
+    resposta = client.post(
+        reverse('beneficios:criar', args=[cliente.pk]),
+        {
+            'numero': '1234567890',
+            'especie': 'pensao',
+            'acao': 'salvar_criar_proposta',
+        },
+    )
+
+    beneficio = Beneficio.objects.get(numero='1234567890')
+    assert resposta.status_code == 302
+    assert resposta.url == f"{reverse('propostas:criar')}?beneficio={beneficio.pk}"
+
+
+def test_cadastro_beneficio_com_margem_invalida_mostra_erro_e_reverte(client, operador):
+    cliente = ClienteFactory()
+
+    resposta = client.post(
+        reverse('beneficios:criar', args=[cliente.pk]),
+        {
+            'numero': '1234567890',
+            'especie': 'pensao',
+            'margem_valor': '-10.00',
+            'margem_data_consulta': datetime.date.today().isoformat(),
+        },
+    )
+
+    assert resposta.status_code == 200
+    assert 'A Margem deve ser maior que zero' in resposta.content.decode()
+    assert not Beneficio.objects.filter(numero='1234567890').exists()
+    assert not Margem.objects.exists()
+
+
 def test_numero_duplicado_mostra_erro(client, operador):
     BeneficioFactory(numero='777')
 
@@ -86,3 +154,23 @@ def test_operador_inativa_beneficio(client, operador):
 
     beneficio.refresh_from_db()
     assert not beneficio.ativo
+
+
+def test_detalhe_beneficio_ativo_exibe_botao_nova_proposta(client, operador):
+    beneficio = BeneficioFactory()
+
+    resposta = client.get(reverse('beneficios:detalhe', args=[beneficio.pk]))
+
+    conteudo = resposta.content.decode()
+    assert f"{reverse('propostas:criar')}?beneficio={beneficio.pk}" in conteudo
+    assert 'Nova Proposta' in conteudo
+
+
+def test_detalhe_beneficio_inativo_nao_exibe_botao_nova_proposta(client, operador):
+    beneficio = BeneficioFactory(ativo=False)
+
+    resposta = client.get(reverse('beneficios:detalhe', args=[beneficio.pk]))
+
+    conteudo = resposta.content.decode()
+    assert f"{reverse('propostas:criar')}?beneficio={beneficio.pk}" not in conteudo
+

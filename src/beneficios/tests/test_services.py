@@ -135,3 +135,59 @@ def test_margem_com_mais_de_30_dias_e_antiga(db, dias, antiga):
 
 def test_beneficio_sem_margem_nao_tem_vigente(db):
     assert selectors.margem_vigente(beneficio=BeneficioFactory()) is None
+
+
+def test_criar_beneficio_com_margem_inicial_valida(usuario):
+    cliente = ClienteFactory()
+    hoje = datetime.date.today()
+
+    beneficio = services.criar_beneficio(
+        usuario=usuario,
+        cliente=cliente,
+        numero='1234567890',
+        especie='pensao',
+        margem_valor=Decimal('500.00'),
+        margem_data_consulta=hoje,
+    )
+
+    assert beneficio.ativo
+    vigente = selectors.margem_vigente(beneficio=beneficio)
+    assert vigente is not None
+    assert vigente.valor == Decimal('500.00')
+    assert vigente.data_consulta == hoje
+
+
+def test_criar_beneficio_com_margem_inicial_sem_data_assume_hoje(usuario):
+    cliente = ClienteFactory()
+
+    beneficio = services.criar_beneficio(
+        usuario=usuario,
+        cliente=cliente,
+        numero='1234567890',
+        especie='pensao',
+        margem_valor=Decimal('350.00'),
+        margem_data_consulta=None,
+    )
+
+    vigente = selectors.margem_vigente(beneficio=beneficio)
+    assert vigente is not None
+    assert vigente.valor == Decimal('350.00')
+    assert vigente.data_consulta == datetime.date.today()
+
+
+def test_criar_beneficio_com_margem_invalida_reverte_transacao(usuario):
+    cliente = ClienteFactory()
+
+    with pytest.raises(MargemInvalida):
+        services.criar_beneficio(
+            usuario=usuario,
+            cliente=cliente,
+            numero='1234567890',
+            especie='pensao',
+            margem_valor=Decimal('-50.00'),
+        )
+
+    assert not Beneficio.objects.filter(numero='1234567890').exists()
+    from beneficios.models import Margem
+    assert not Margem.objects.exists()
+

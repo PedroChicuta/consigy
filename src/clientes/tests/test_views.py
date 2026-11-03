@@ -1,8 +1,11 @@
+import datetime
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.urls import reverse
 
+from beneficios.tests.factories import BeneficioFactory, MargemFactory
 from clientes.models import Cliente
 from clientes.tests.factories import ClienteFactory
 
@@ -66,6 +69,72 @@ def test_cpf_existente_leva_a_ficha_com_aviso(client, operador):
     assert resposta.redirect_chain[-1][0] == reverse('clientes:detalhe', args=[existente.pk])
     assert 'Já existe um Cliente' in resposta.content.decode()
     assert Cliente.objects.count() == 1
+
+
+def test_criar_cliente_pre_preenche_cpf_via_querystring(client, operador):
+    resposta = client.get(reverse('clientes:criar') + '?cpf=529.982.247-25')
+
+    assert resposta.status_code == 200
+    assert '529.982.247-25' in resposta.content.decode()
+    assert 'Salvar e adicionar Benefício' in resposta.content.decode()
+
+
+def test_criar_cliente_salvar_adicionar_beneficio_redireciona(client, operador):
+    resposta = client.post(
+        reverse('clientes:criar'),
+        {**DADOS, 'acao': 'salvar_adicionar_beneficio'},
+    )
+
+    cliente = Cliente.objects.get(cpf='52998224725')
+    assert resposta.status_code == 302
+    assert resposta.url == reverse('beneficios:criar', args=[cliente.pk])
+
+
+def test_ficha_cliente_sem_beneficio_ativo_nao_oferece_link_solto_nova_proposta(client, operador):
+    cliente = ClienteFactory()
+
+    resposta = client.get(reverse('clientes:detalhe', args=[cliente.pk]))
+
+    conteudo = resposta.content.decode()
+    assert reverse('propostas:criar') not in conteudo
+    assert 'Cadastre um Benefício ativo primeiro' in conteudo
+
+
+def test_ficha_cliente_com_um_beneficio_ativo_pre_seleciona_na_secao_propostas(client, operador):
+    cliente = ClienteFactory()
+    beneficio = BeneficioFactory(cliente=cliente, numero='12345')
+
+    resposta = client.get(reverse('clientes:detalhe', args=[cliente.pk]))
+
+    conteudo = resposta.content.decode()
+    link_esperado = f"{reverse('propostas:criar')}?beneficio={beneficio.pk}"
+    assert link_esperado in conteudo
+
+
+def test_ficha_cliente_tabela_beneficios_exibe_margem_vigente_e_acao_proposta(client, operador):
+    cliente = ClienteFactory()
+    b1 = BeneficioFactory(cliente=cliente, numero='11111')
+    MargemFactory(beneficio=b1, valor=300, data_consulta=datetime.date.today())
+
+    b2 = BeneficioFactory(cliente=cliente, numero='22222')
+    MargemFactory(
+        beneficio=b2,
+        valor=500,
+        data_consulta=datetime.date.today() - datetime.timedelta(days=40),
+    )
+
+    b3 = BeneficioFactory(cliente=cliente, numero='33333')  # Sem margem
+
+    resposta = client.get(reverse('clientes:detalhe', args=[cliente.pk]))
+
+    conteudo = resposta.content.decode()
+    assert '300,00' in conteudo
+    assert '500,00' in conteudo
+    assert 'Mais de 30 dias' in conteudo
+    assert 'Nenhuma Margem' in conteudo or 'Sem Margem' in conteudo
+    assert f"{reverse('propostas:criar')}?beneficio={b1.pk}" in conteudo
+    assert f"{reverse('propostas:criar')}?beneficio={b2.pk}" in conteudo
+    assert f"{reverse('propostas:criar')}?beneficio={b3.pk}" in conteudo
 
 
 def test_lista_oculta_parte_do_cpf(client, operador):

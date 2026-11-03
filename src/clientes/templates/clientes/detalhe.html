@@ -36,24 +36,39 @@
     {% endif %}
   </div>
   <table class="table table-sm">
-    <thead><tr><th>Número</th><th>Espécie</th><th>Situação</th><th></th></tr></thead>
+    <thead><tr><th>Número</th><th>Espécie</th><th>Margem vigente</th><th>Situação</th><th></th></tr></thead>
     <tbody>
       {% for beneficio in beneficios %}
         <tr>
           <td><a href="{% url 'beneficios:detalhe' beneficio.pk %}">{{ beneficio.numero }}</a></td>
           <td>{{ beneficio.get_especie_display }}</td>
+          <td>
+            {% if beneficio.margem_vigente %}
+              {{ beneficio.margem_vigente.valor|moeda }} ({{ beneficio.margem_vigente.data_consulta|date:'d/m/Y' }})
+              {% if beneficio.margem_vigente.antiga %}
+                <span class="badge text-bg-warning ms-1">Mais de 30 dias</span>
+              {% endif %}
+            {% else %}
+              <span class="text-body-secondary">Nenhuma Margem</span>
+            {% endif %}
+          </td>
           <td>{% if beneficio.ativo %}Ativo{% else %}Inativo{% endif %}</td>
           <td>
-            {% if beneficio.ativo and perms.beneficios.change_beneficio %}
-              <form method="post" action="{% url 'beneficios:inativar' beneficio.pk %}">
-                {% csrf_token %}
-                <button class="btn btn-sm btn-outline-secondary" type="submit">Inativar</button>
-              </form>
-            {% endif %}
+            <div class="d-flex gap-2 justify-content-end">
+              {% if beneficio.ativo and perms.propostas.add_proposta %}
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'propostas:criar' %}?beneficio={{ beneficio.pk }}&next={{ request.path }}">Nova Proposta</a>
+              {% endif %}
+              {% if beneficio.ativo and perms.beneficios.change_beneficio %}
+                <form method="post" action="{% url 'beneficios:inativar' beneficio.pk %}">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-secondary" type="submit">Inativar</button>
+                </form>
+              {% endif %}
+            </div>
           </td>
         </tr>
       {% empty %}
-        <tr><td colspan="4">Nenhum Benefício cadastrado.</td></tr>
+        <tr><td colspan="5">Nenhum Benefício cadastrado.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -62,7 +77,13 @@
     <div class="d-flex justify-content-between align-items-center mt-4">
       <h2 class="h5 mb-0">Propostas</h2>
       {% if cliente.ativo and perms.propostas.add_proposta %}
-        <a class="btn btn-sm btn-outline-primary" href="{% url 'propostas:criar' %}?next={{ request.path }}">Nova Proposta</a>
+        {% if beneficios_ativos|length == 1 %}
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'propostas:criar' %}?beneficio={{ beneficios_ativos.0.pk }}&next={{ request.path }}">Nova Proposta</a>
+        {% elif beneficios_ativos|length > 1 %}
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'propostas:criar' %}?next={{ request.path }}">Nova Proposta</a>
+        {% else %}
+          <span class="text-body-secondary small">Cadastre um Benefício ativo primeiro.</span>
+        {% endif %}
       {% endif %}
     </div>
     {% include 'propostas/partials/_linhas.html' with propostas=propostas ocultar_cliente=True %}

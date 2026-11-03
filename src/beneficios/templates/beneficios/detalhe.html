@@ -11,9 +11,14 @@
 {% endblock %}
 
 {% block conteudo %}
-  <h1 class="h3">Benefício {{ beneficio.numero }}
-    {% if not beneficio.ativo %}<span class="badge text-bg-secondary">Inativo</span>{% endif %}
-  </h1>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Benefício {{ beneficio.numero }}
+      {% if not beneficio.ativo %}<span class="badge text-bg-secondary">Inativo</span>{% endif %}
+    </h1>
+    {% if beneficio.ativo and perms.propostas.add_proposta %}
+      <a class="btn btn-outline-primary" href="{% url 'propostas:criar' %}?beneficio={{ beneficio.pk }}">Nova Proposta</a>
+    {% endif %}
+  </div>
   <dl class="row">
     <dt class="col-sm-3">Cliente</dt>
     <dd class="col-sm-9"><a href="{% url 'clientes:detalhe' beneficio.cliente.pk %}">{{ beneficio.cliente.nome }}</a></dd>

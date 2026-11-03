@@ -1,8 +1,16 @@
+from django.db.models import Prefetch
+
 from beneficios.models import Beneficio, Margem
 
 
 def beneficios_do_cliente(*, cliente):
-    return Beneficio.objects.filter(cliente=cliente).order_by('-ativo', 'numero')
+    return (
+        Beneficio.objects.filter(cliente=cliente)
+        .prefetch_related(
+            Prefetch('margens', queryset=Margem.objects.order_by('-data_consulta', '-pk'))
+        )
+        .order_by('-ativo', 'numero')
+    )
 
 
 def historico_de_margens(*, beneficio):
