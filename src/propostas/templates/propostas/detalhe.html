@@ -40,6 +40,11 @@
       <form method="post" action="{% url 'propostas:formalizar' proposta.pk %}">{% csrf_token %}<button class="btn btn-success" type="submit">Formalizar</button></form>
     {% endif %}
   </div>
+  {% if proposta.status == 'digitada' and impedimento_envio %}
+    <div id="alerta-impedimento-envio" class="alert alert-{{ impedimento_envio.nivel }} mb-3" role="alert">
+      <strong>Atenção:</strong> {{ impedimento_envio.mensagem }}
+    </div>
+  {% endif %}
   <dl class="row">
     <dt class="col-sm-3">Cliente</dt>
     <dd class="col-sm-9"><a href="{% url 'clientes:detalhe' proposta.beneficio.cliente.pk %}">{{ proposta.beneficio.cliente.nome }}</a></dd>

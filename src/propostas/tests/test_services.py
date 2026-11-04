@@ -454,3 +454,151 @@ def test_historico_registra_autor_e_status(usuario):
 
     assert historico[0].status == 'em_analise'
     assert historico[0].history_user == usuario
+
+
+def test_criar_e_enviar_proposta_sucesso(usuario):
+    beneficio = BeneficioFactory()
+    MargemFactory(beneficio=beneficio, valor=Decimal('500.00'))
+    banco = BancoFactory()
+    modalidade = ModalidadeFactory()
+
+    proposta = services.criar_e_enviar_proposta(
+        usuario=usuario,
+        beneficio=beneficio,
+        banco=banco,
+        modalidade=modalidade,
+        **CONDICOES,
+    )
+
+    proposta.refresh_from_db()
+    assert proposta.status == Proposta.Status.ENVIADA
+    assert proposta.operador == usuario
+    assert proposta.history.first().history_user == usuario
+
+
+def test_criar_e_enviar_sem_margem_nao_cria_proposta_orfa(usuario):
+    beneficio = BeneficioFactory()
+    banco = BancoFactory()
+    modalidade = ModalidadeFactory()
+
+    with pytest.raises(BeneficioSemMargem):
+        services.criar_e_enviar_proposta(
+            usuario=usuario,
+            beneficio=beneficio,
+            banco=banco,
+            modalidade=modalidade,
+            **CONDICOES,
+        )
+
+    assert Proposta.objects.count() == 0
+
+
+def test_criar_e_enviar_parcela_acima_da_margem_nao_cria_proposta_orfa(usuario):
+    beneficio = BeneficioFactory()
+    MargemFactory(beneficio=beneficio, valor=Decimal('200.00'))
+    banco = BancoFactory()
+    modalidade = ModalidadeFactory()
+
+    with pytest.raises(ParcelaAcimaDaMargem):
+        services.criar_e_enviar_proposta(
+            usuario=usuario,
+            beneficio=beneficio,
+            banco=banco,
+            modalidade=modalidade,
+            **CONDICOES,
+        )
+
+    assert Proposta.objects.count() == 0
+
+
+def test_criar_e_enviar_margem_antiga_sem_confirmacao_nao_cria_proposta_orfa(usuario):
+    beneficio = BeneficioFactory()
+    MargemFactory(
+        beneficio=beneficio,
+        valor=Decimal('500.00'),
+        data_consulta=datetime.date.today() - datetime.timedelta(days=45),
+    )
+    banco = BancoFactory()
+    modalidade = ModalidadeFactory()
+
+    with pytest.raises(MargemAntigaSemConfirmacao):
+        services.criar_e_enviar_proposta(
+            usuario=usuario,
+            beneficio=beneficio,
+            banco=banco,
+            modalidade=modalidade,
+            **CONDICOES,
+        )
+
+    assert Proposta.objects.count() == 0
+
+
+def test_criar_e_enviar_margem_antiga_com_confirmacao(usuario):
+    beneficio = BeneficioFactory()
+    MargemFactory(
+        beneficio=beneficio,
+        valor=Decimal('500.00'),
+        data_consulta=datetime.date.today() - datetime.timedelta(days=45),
+    )
+    banco = BancoFactory()
+    modalidade = ModalidadeFactory()
+
+    proposta = services.criar_e_enviar_proposta(
+        usuario=usuario,
+        beneficio=beneficio,
+        banco=banco,
+        modalidade=modalidade,
+        confirmar_margem_antiga=True,
+        **CONDICOES,
+    )
+
+    proposta.refresh_from_db()
+    assert proposta.status == Proposta.Status.ENVIADA
+
+
+def test_editar_e_enviar_proposta_sucesso(usuario):
+    proposta = _proposta_com_margem(parcela='250.00', margem='500.00')
+
+    atualizada = services.editar_e_enviar_proposta(
+        usuario=usuario,
+        proposta=proposta,
+        beneficio=proposta.beneficio,
+        banco=proposta.banco,
+        modalidade=proposta.modalidade,
+        valor=Decimal('10000.00'),
+        valor_liberado=Decimal('9000.00'),
+        prazo=48,
+        parcela=Decimal('350.00'),
+        taxa=Decimal('1.8000'),
+        observacoes='Ajustada e enviada',
+    )
+
+    atualizada.refresh_from_db()
+    assert atualizada.status == Proposta.Status.ENVIADA
+    assert atualizada.parcela == Decimal('350.00')
+    assert atualizada.observacoes == 'Ajustada e enviada'
+
+
+def test_editar_e_enviar_parcela_acima_da_margem_reverte_alteracoes(usuario):
+    proposta = _proposta_com_margem(parcela='250.00', margem='300.00')
+
+    with pytest.raises(ParcelaAcimaDaMargem):
+        services.editar_e_enviar_proposta(
+            usuario=usuario,
+            proposta=proposta,
+            beneficio=proposta.beneficio,
+            banco=proposta.banco,
+            modalidade=proposta.modalidade,
+            valor=Decimal('10000.00'),
+            valor_liberado=Decimal('9000.00'),
+            prazo=48,
+            parcela=Decimal('400.00'),
+            taxa=Decimal('1.8000'),
+            observacoes='Tentativa com erro',
+        )
+
+    proposta.refresh_from_db()
+    assert proposta.status == Proposta.Status.DIGITADA
+    assert proposta.parcela == Decimal('250.00')
+    assert proposta.observacoes != 'Tentativa com erro'
+

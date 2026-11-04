@@ -18,6 +18,14 @@ from propostas.forms import ModalidadeForm, MotivoForm, ObservacoesForm, Propost
 from propostas.models import Modalidade, Proposta
 
 POR_PAGINA = 25
+ACOES_EXTRAS_PROPOSTA = [
+    {
+        'rotulo': 'Salvar como Digitada',
+        'valor': 'salvar_digitada',
+        'estilo': 'btn-outline-primary',
+    }
+]
+VALOR_ENVIAR_PROPOSTA = 'salvar_enviar'
 
 
 def _pk_ou_vazio(valor):
@@ -56,6 +64,8 @@ class ListaView(PermissaoNecessariaMixin, View):
 
 class CriarView(PermissaoNecessariaMixin, View):
     permission_required = 'propostas.add_proposta'
+    acoes_extras = ACOES_EXTRAS_PROPOSTA
+    valor_enviar = VALOR_ENVIAR_PROPOSTA
 
     def get(self, request):
         beneficio_pk = _pk_ou_vazio(request.GET.get('beneficio', ''))
@@ -75,24 +85,59 @@ class CriarView(PermissaoNecessariaMixin, View):
             {
                 'form': PropostaForm(initial=inicial),
                 'beneficio': beneficio,
+                'acoes_extras': self.acoes_extras,
+                'valor_enviar': self.valor_enviar,
             },
         )
 
     def post(self, request):
         form = PropostaForm(request.POST)
+        pedir_confirmacao = False
+        aviso_margem_antiga = ''
+        acao = request.POST.get('acao')
+        confirmar = request.POST.get('confirmar_margem_antiga') in ('1', 'true', 'on')
+
         if form.is_valid():
-            try:
-                proposta = services.criar_proposta(usuario=request.user, **form.cleaned_data)
-            except ErroDeNegocio as erro:
-                form.add_error(None, str(erro))
+            if acao == self.valor_enviar:
+                try:
+                    proposta = services.criar_e_enviar_proposta(
+                        usuario=request.user,
+                        confirmar_margem_antiga=confirmar,
+                        **form.cleaned_data,
+                    )
+                except MargemAntigaSemConfirmacao as erro:
+                    messages.warning(request, str(erro))
+                    pedir_confirmacao = True
+                    aviso_margem_antiga = str(erro)
+                except ErroDeNegocio as erro:
+                    form.add_error(None, str(erro))
+                else:
+                    messages.success(request, 'Proposta enviada ao Banco.')
+                    return redirect('propostas:detalhe', pk=proposta.pk)
             else:
-                messages.success(request, 'Proposta registrada.')
-                return redirect('propostas:detalhe', pk=proposta.pk)
+                try:
+                    proposta = services.criar_proposta(usuario=request.user, **form.cleaned_data)
+                except ErroDeNegocio as erro:
+                    form.add_error(None, str(erro))
+                else:
+                    messages.success(request, 'Proposta registrada.')
+                    return redirect('propostas:detalhe', pk=proposta.pk)
         beneficio_pk = _pk_ou_vazio(request.POST.get('beneficio', ''))
         beneficio = None
         if beneficio_pk:
             beneficio = Beneficio.objects.select_related('cliente').filter(pk=beneficio_pk).first()
-        return render(request, 'propostas/form.html', {'form': form, 'beneficio': beneficio})
+        return render(
+            request,
+            'propostas/form.html',
+            {
+                'form': form,
+                'beneficio': beneficio,
+                'acoes_extras': self.acoes_extras,
+                'valor_enviar': self.valor_enviar,
+                'pedir_confirmacao': pedir_confirmacao,
+                'aviso_margem_antiga': aviso_margem_antiga,
+            },
+        )
 
 
 class BuscarBeneficiosView(PermissaoNecessariaMixin, View):
@@ -222,6 +267,7 @@ def _contexto_detalhe(proposta, *, usuario=None, **extra):
         'proposta': proposta,
         'historico': historico,
         'contratos': contratos,
+        'impedimento_envio': selectors.impedimento_envio(proposta=proposta),
         'form_observacoes': ObservacoesForm(initial={'observacoes': proposta.observacoes}),
         'form_recusar': MotivoForm(auto_id='recusar_%s'),
         'form_cancelar': MotivoForm(auto_id='cancelar_%s'),
@@ -253,6 +299,8 @@ class EnviarView(PermissaoNecessariaMixin, View):
 
 class EditarView(PermissaoNecessariaMixin, View):
     permission_required = 'propostas.change_proposta'
+    acoes_extras = ACOES_EXTRAS_PROPOSTA
+    valor_enviar = VALOR_ENVIAR_PROPOSTA
 
     def _dados_iniciais(self, proposta):
         return {
@@ -276,28 +324,68 @@ class EditarView(PermissaoNecessariaMixin, View):
         return render(
             request,
             'propostas/form.html',
-            {'form': form, 'proposta': proposta, 'beneficio': proposta.beneficio},
+            {
+                'form': form,
+                'proposta': proposta,
+                'beneficio': proposta.beneficio,
+                'acoes_extras': self.acoes_extras,
+                'valor_enviar': self.valor_enviar,
+            },
         )
 
     def post(self, request, pk):
         proposta = _buscar(pk)
+        if proposta.status != Proposta.Status.DIGITADA:
+            messages.error(request, 'Só é possível alterar as condições de uma Proposta Digitada.')
+            return redirect('propostas:detalhe', pk=proposta.pk)
         form = PropostaForm(request.POST, proposta=proposta)
+        pedir_confirmacao = False
+        aviso_margem_antiga = ''
+        acao = request.POST.get('acao')
+        confirmar = request.POST.get('confirmar_margem_antiga') in ('1', 'true', 'on')
+
         if form.is_valid():
-            try:
-                services.editar_proposta(
-                    usuario=request.user, proposta=proposta, **form.cleaned_data
-                )
-            except ErroDeNegocio as erro:
-                form.add_error(None, str(erro))
+            if acao == self.valor_enviar:
+                try:
+                    services.editar_e_enviar_proposta(
+                        usuario=request.user,
+                        proposta=proposta,
+                        confirmar_margem_antiga=confirmar,
+                        **form.cleaned_data,
+                    )
+                except MargemAntigaSemConfirmacao as erro:
+                    messages.warning(request, str(erro))
+                    pedir_confirmacao = True
+                    aviso_margem_antiga = str(erro)
+                except ErroDeNegocio as erro:
+                    form.add_error(None, str(erro))
+                else:
+                    messages.success(request, 'Proposta enviada ao Banco.')
+                    return redirect('propostas:detalhe', pk=proposta.pk)
             else:
-                messages.success(request, 'Proposta atualizada.')
-                return redirect('propostas:detalhe', pk=proposta.pk)
+                try:
+                    services.editar_proposta(
+                        usuario=request.user, proposta=proposta, **form.cleaned_data
+                    )
+                except ErroDeNegocio as erro:
+                    form.add_error(None, str(erro))
+                else:
+                    messages.success(request, 'Proposta atualizada.')
+                    return redirect('propostas:detalhe', pk=proposta.pk)
         beneficio_pk = _pk_ou_vazio(request.POST.get('beneficio', '')) or proposta.beneficio_id
         beneficio = Beneficio.objects.select_related('cliente').filter(pk=beneficio_pk).first()
         return render(
             request,
             'propostas/form.html',
-            {'form': form, 'proposta': proposta, 'beneficio': beneficio},
+            {
+                'form': form,
+                'proposta': proposta,
+                'beneficio': beneficio,
+                'acoes_extras': self.acoes_extras,
+                'valor_enviar': self.valor_enviar,
+                'pedir_confirmacao': pedir_confirmacao,
+                'aviso_margem_antiga': aviso_margem_antiga,
+            },
         )
 
 

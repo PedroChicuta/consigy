@@ -492,4 +492,329 @@ def test_detalhe_proposta_digitada_exibe_margem_vigente_e_permite_atualizacao_in
     assert 'Mais de 30 dias' not in html_resp
 
 
+def test_formulario_exibe_botoes_salvar_digitada_e_salvar_enviar(client, operador):
+    beneficio = BeneficioFactory()
+    proposta = PropostaFactory(beneficio=beneficio)
+
+    # Criação
+    resp_criar = client.get(reverse('propostas:criar'), {'beneficio': beneficio.pk})
+    conteudo_criar = resp_criar.content.decode()
+    assert 'name="acao" value="salvar_digitada">Salvar como Digitada</button>' in conteudo_criar
+    assert 'name="acao" value="salvar_enviar">Salvar e Enviar ao Banco</button>' in conteudo_criar
+
+    # Edição
+    resp_editar = client.get(reverse('propostas:editar', args=[proposta.pk]))
+    conteudo_editar = resp_editar.content.decode()
+    assert 'name="acao" value="salvar_digitada">Salvar como Digitada</button>' in conteudo_editar
+    assert 'name="acao" value="salvar_enviar">Salvar e Enviar ao Banco</button>' in conteudo_editar
+
+
+def test_salvar_como_digitada_permite_sem_margem(client, operador):
+    beneficio, banco, modalidade = BeneficioFactory(), BancoFactory(), ModalidadeFactory()
+
+    resposta = client.post(
+        reverse('propostas:criar'),
+        {
+            **DADOS,
+            'beneficio': beneficio.pk,
+            'banco': banco.pk,
+            'modalidade': modalidade.pk,
+            'acao': 'salvar_digitada',
+        },
+    )
+
+    proposta = Proposta.objects.get()
+    assert resposta.status_code == 302
+    assert proposta.status == Proposta.Status.DIGITADA
+
+
+def test_salvar_como_digitada_permite_parcela_acima_da_margem(client, operador):
+    beneficio, banco, modalidade = BeneficioFactory(), BancoFactory(), ModalidadeFactory()
+    MargemFactory(beneficio=beneficio, valor=Decimal('150.00'))
+
+    resposta = client.post(
+        reverse('propostas:criar'),
+        {
+            **DADOS,  # parcela = 200.00
+            'beneficio': beneficio.pk,
+            'banco': banco.pk,
+            'modalidade': modalidade.pk,
+            'acao': 'salvar_digitada',
+        },
+    )
+
+    proposta = Proposta.objects.get()
+    assert resposta.status_code == 302
+    assert proposta.status == Proposta.Status.DIGITADA
+
+
+def test_detalhe_proposta_digitada_exibe_alerta_preventivo_sem_margem(client, operador):
+    proposta = PropostaFactory(status=Proposta.Status.DIGITADA)
+
+    resposta = client.get(reverse('propostas:detalhe', args=[proposta.pk]))
+    conteudo = resposta.content.decode()
+
+    assert 'id="alerta-impedimento-envio"' in conteudo
+    assert 'não possui Margem' in conteudo
+
+
+def test_detalhe_proposta_digitada_exibe_alerta_preventivo_parcela_acima_da_margem(
+    client, operador
+):
+    beneficio = BeneficioFactory()
+    MargemFactory(beneficio=beneficio, valor=Decimal('150.00'))
+    proposta = PropostaFactory(
+        beneficio=beneficio, parcela=Decimal('200.00'), status=Proposta.Status.DIGITADA
+    )
+
+    resposta = client.get(reverse('propostas:detalhe', args=[proposta.pk]))
+    conteudo = resposta.content.decode()
+
+    assert 'id="alerta-impedimento-envio"' in conteudo
+    assert 'R$ 200,00' in conteudo
+    assert 'R$ 150,00' in conteudo
+
+
+def test_detalhe_proposta_digitada_exibe_alerta_preventivo_margem_antiga(client, operador):
+    beneficio = BeneficioFactory()
+    MargemFactory(
+        beneficio=beneficio,
+        valor=Decimal('500.00'),
+        data_consulta=datetime.date.today() - datetime.timedelta(days=45),
+    )
+    proposta = PropostaFactory(
+        beneficio=beneficio, parcela=Decimal('200.00'), status=Proposta.Status.DIGITADA
+    )
+
+    resposta = client.get(reverse('propostas:detalhe', args=[proposta.pk]))
+    conteudo = resposta.content.decode()
+
+    assert 'id="alerta-impedimento-envio"' in conteudo
+    assert 'mais de 30 dias' in conteudo
+
+
+def test_detalhe_proposta_digitada_sem_alerta_quando_margem_valida(client, operador):
+    beneficio = BeneficioFactory()
+    MargemFactory(beneficio=beneficio, valor=Decimal('500.00'))
+    proposta = PropostaFactory(
+        beneficio=beneficio, parcela=Decimal('200.00'), status=Proposta.Status.DIGITADA
+    )
+
+    resposta = client.get(reverse('propostas:detalhe', args=[proposta.pk]))
+    conteudo = resposta.content.decode()
+
+    assert 'id="alerta-impedimento-envio"' not in conteudo
+
+
+def test_salvar_e_enviar_ao_banco_cria_direto_em_status_enviada(client, operador):
+    beneficio, banco, modalidade = BeneficioFactory(), BancoFactory(), ModalidadeFactory()
+    MargemFactory(beneficio=beneficio, valor=Decimal('500.00'))
+
+    resposta = client.post(
+        reverse('propostas:criar'),
+        {
+            **DADOS,
+            'beneficio': beneficio.pk,
+            'banco': banco.pk,
+            'modalidade': modalidade.pk,
+            'acao': 'salvar_enviar',
+        },
+        follow=True,
+    )
+
+    proposta = Proposta.objects.get()
+    assert proposta.status == Proposta.Status.ENVIADA
+    assert 'Proposta enviada ao Banco.' in resposta.content.decode()
+
+
+def test_salvar_e_enviar_ao_banco_sem_margem_nao_cria_orfa_e_exibe_erro_no_form(client, operador):
+    beneficio, banco, modalidade = BeneficioFactory(), BancoFactory(), ModalidadeFactory()
+
+    resposta = client.post(
+        reverse('propostas:criar'),
+        {
+            **DADOS,
+            'beneficio': beneficio.pk,
+            'banco': banco.pk,
+            'modalidade': modalidade.pk,
+            'acao': 'salvar_enviar',
+        },
+    )
+
+    assert resposta.status_code == 200
+    assert Proposta.objects.count() == 0
+    assert 'não tem Margem consignável registrada' in resposta.content.decode()
+
+
+def test_salvar_e_enviar_ao_banco_parcela_acima_da_margem_nao_cria_orfa_e_exibe_erro_no_form(
+    client, operador
+):
+    beneficio, banco, modalidade = BeneficioFactory(), BancoFactory(), ModalidadeFactory()
+    MargemFactory(beneficio=beneficio, valor=Decimal('150.00'))
+
+    resposta = client.post(
+        reverse('propostas:criar'),
+        {
+            **DADOS,  # parcela = 200.00
+            'beneficio': beneficio.pk,
+            'banco': banco.pk,
+            'modalidade': modalidade.pk,
+            'acao': 'salvar_enviar',
+        },
+    )
+
+    assert resposta.status_code == 200
+    assert Proposta.objects.count() == 0
+    conteudo = resposta.content.decode()
+    assert 'maior que a Margem vigente' in conteudo
+    assert 'R$ 200,00' in conteudo
+    assert 'R$ 150,00' in conteudo
+
+
+def test_salvar_e_enviar_ao_banco_margem_antiga_pede_confirmacao_e_conclui_apos_confirmar(
+    client, operador
+):
+    beneficio, banco, modalidade = BeneficioFactory(), BancoFactory(), ModalidadeFactory()
+    MargemFactory(
+        beneficio=beneficio,
+        valor=Decimal('500.00'),
+        data_consulta=datetime.date.today() - datetime.timedelta(days=45),
+    )
+
+    # 1. Sem confirmação: não grava proposta e exibe opção de confirmação no form
+    dados_post = {
+        **DADOS,
+        'beneficio': beneficio.pk,
+        'banco': banco.pk,
+        'modalidade': modalidade.pk,
+        'acao': 'salvar_enviar',
+    }
+    resposta_1 = client.post(reverse('propostas:criar'), dados_post)
+    assert resposta_1.status_code == 200
+    assert Proposta.objects.count() == 0
+    conteudo_1 = resposta_1.content.decode()
+    assert 'id="id_confirmar_margem_antiga"' in conteudo_1
+    assert 'mais de 30 dias' in conteudo_1
+
+    # 2. Com confirmação: cria direto como ENVIADA
+    resposta_2 = client.post(
+        reverse('propostas:criar'),
+        {**dados_post, 'confirmar_margem_antiga': '1'},
+        follow=True,
+    )
+    proposta = Proposta.objects.get()
+    assert proposta.status == Proposta.Status.ENVIADA
+    assert 'Proposta enviada ao Banco.' in resposta_2.content.decode()
+
+
+def test_editar_salvar_e_enviar_ao_banco_atualiza_e_envia(client, operador):
+    beneficio = BeneficioFactory()
+    MargemFactory(beneficio=beneficio, valor=Decimal('500.00'))
+    proposta = PropostaFactory(beneficio=beneficio, status=Proposta.Status.DIGITADA)
+
+    resposta = client.post(
+        reverse('propostas:editar', args=[proposta.pk]),
+        {
+            'beneficio': proposta.beneficio_id,
+            'banco': proposta.banco_id,
+            'modalidade': proposta.modalidade_id,
+            'valor': '15000.00',
+            'valor_liberado': '14000.00',
+            'prazo': '72',
+            'parcela': '450.00',
+            'taxa': '1.7500',
+            'observacoes': 'Enviando na edição',
+            'acao': 'salvar_enviar',
+        },
+        follow=True,
+    )
+
+    proposta.refresh_from_db()
+    assert proposta.status == Proposta.Status.ENVIADA
+    assert proposta.parcela == Decimal('450.00')
+    assert proposta.observacoes == 'Enviando na edição'
+    assert 'Proposta enviada ao Banco.' in resposta.content.decode()
+
+
+def test_editar_salvar_e_enviar_ao_banco_parcela_acima_da_margem_nao_altera_proposta(
+    client, operador
+):
+    beneficio = BeneficioFactory()
+    MargemFactory(beneficio=beneficio, valor=Decimal('300.00'))
+    proposta = PropostaFactory(
+        beneficio=beneficio, parcela=Decimal('200.00'), status=Proposta.Status.DIGITADA
+    )
+
+    resposta = client.post(
+        reverse('propostas:editar', args=[proposta.pk]),
+        {
+            'beneficio': proposta.beneficio_id,
+            'banco': proposta.banco_id,
+            'modalidade': proposta.modalidade_id,
+            'valor': '15000.00',
+            'valor_liberado': '14000.00',
+            'prazo': '72',
+            'parcela': '450.00',
+            'taxa': '1.7500',
+            'observacoes': 'Tentando parcela alta',
+            'acao': 'salvar_enviar',
+        },
+    )
+
+    assert resposta.status_code == 200
+    proposta.refresh_from_db()
+    assert proposta.status == Proposta.Status.DIGITADA
+    assert proposta.parcela == Decimal('200.00')
+    assert proposta.observacoes != 'Tentando parcela alta'
+    conteudo = resposta.content.decode()
+    assert 'maior que a Margem vigente' in conteudo
+    assert 'R$ 450,00' in conteudo
+    assert 'R$ 300,00' in conteudo
+
+
+def test_editar_salvar_e_enviar_ao_banco_margem_antiga_fluxo_confirmacao(client, operador):
+    beneficio = BeneficioFactory()
+    MargemFactory(
+        beneficio=beneficio,
+        valor=Decimal('500.00'),
+        data_consulta=datetime.date.today() - datetime.timedelta(days=45),
+    )
+    proposta = PropostaFactory(
+        beneficio=beneficio, parcela=Decimal('200.00'), status=Proposta.Status.DIGITADA
+    )
+
+    dados_post = {
+        'beneficio': proposta.beneficio_id,
+        'banco': proposta.banco_id,
+        'modalidade': proposta.modalidade_id,
+        'valor': '15000.00',
+        'valor_liberado': '14000.00',
+        'prazo': '72',
+        'parcela': '300.00',
+        'taxa': '1.7500',
+        'observacoes': 'Ajuste com margem antiga',
+        'acao': 'salvar_enviar',
+    }
+
+    # 1. Sem confirmação
+    resp_1 = client.post(reverse('propostas:editar', args=[proposta.pk]), dados_post)
+    assert resp_1.status_code == 200
+    proposta.refresh_from_db()
+    assert proposta.status == Proposta.Status.DIGITADA
+    assert proposta.parcela == Decimal('200.00')
+    assert 'id="id_confirmar_margem_antiga"' in resp_1.content.decode()
+
+    # 2. Com confirmação
+    resp_2 = client.post(
+        reverse('propostas:editar', args=[proposta.pk]),
+        {**dados_post, 'confirmar_margem_antiga': '1'},
+        follow=True,
+    )
+    proposta.refresh_from_db()
+    assert proposta.status == Proposta.Status.ENVIADA
+    assert proposta.parcela == Decimal('300.00')
+    assert 'Proposta enviada ao Banco.' in resp_2.content.decode()
+
+
+
 
