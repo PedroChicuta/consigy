@@ -1,0 +1,39 @@
+{% if clientes %}
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>CPF</th>
+          <th>Benefícios ativos</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cliente in clientes %}
+          <tr>
+            <td>
+              <a href="{% url 'clientes:detalhe' cliente.pk %}">{{ cliente.nome }}</a>
+            </td>
+            <td>{{ cliente.cpf_mascarado }}</td>
+            <td>
+              {% if cliente.total_beneficios_ativos == 1 %}
+                1 benefício ativo
+              {% else %}
+                {{ cliente.total_beneficios_ativos }} benefícios ativos
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% elif busca %}
+  {% if cpf_inedito and perms.clientes.add_cliente %}
+    <div class="alert alert-info d-flex justify-content-between align-items-center mb-0">
+      <span>Nenhum Cliente cadastrado com este CPF.</span>
+      <a class="btn btn-primary btn-sm" href="{% url 'clientes:criar' %}?cpf={{ cpf_inedito }}">Cadastrar Cliente com este CPF</a>
+    </div>
+  {% else %}
+    <p class="text-muted mb-0">Nenhum Cliente encontrado.</p>
+  {% endif %}
+{% endif %}
