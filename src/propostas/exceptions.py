@@ -1,4 +1,5 @@
 from core.exceptions import ErroDeNegocio
+from core.formatacao import formatar_moeda
 
 
 class BeneficioInativo(ErroDeNegocio):
@@ -14,6 +15,26 @@ class BancoInativo(ErroDeNegocio):
 class ModalidadeInativa(ErroDeNegocio):
     def __init__(self):
         super().__init__('A Modalidade está inativa; escolha uma Modalidade ativa.')
+
+
+class NomeDeModalidadeObrigatorio(ErroDeNegocio):
+    def __init__(self):
+        super().__init__('Informe o nome da Modalidade.')
+
+
+class NomeDeModalidadeDuplicado(ErroDeNegocio):
+    def __init__(self):
+        super().__init__('Já existe uma Modalidade com este nome.')
+
+
+class ModalidadeJaInativa(ErroDeNegocio):
+    def __init__(self):
+        super().__init__('A Modalidade já está inativa.')
+
+
+class ModalidadeJaAtiva(ErroDeNegocio):
+    def __init__(self):
+        super().__init__('A Modalidade já está ativa.')
 
 
 class CondicoesInvalidas(ErroDeNegocio):
@@ -33,8 +54,8 @@ class BeneficioSemMargem(ErroDeNegocio):
 class ParcelaAcimaDaMargem(ErroDeNegocio):
     def __init__(self, *, parcela, margem):
         super().__init__(
-            f'A parcela (R$ {parcela}) é maior que a Margem vigente (R$ {margem}); '
-            'ajuste as condições antes de enviar.'
+            f'A parcela ({formatar_moeda(parcela)}) é maior que a Margem vigente '
+            f'({formatar_moeda(margem)}); ajuste as condições antes de enviar.'
         )
 
 

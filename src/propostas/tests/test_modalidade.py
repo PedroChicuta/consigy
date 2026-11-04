@@ -7,8 +7,14 @@ from django.urls import reverse
 
 from bancos.tests.factories import BancoFactory
 from beneficios.tests.factories import BeneficioFactory
-from propostas import services
-from propostas.exceptions import ModalidadeInativa
+from propostas import selectors, services
+from propostas.exceptions import (
+    ModalidadeInativa,
+    ModalidadeJaAtiva,
+    ModalidadeJaInativa,
+    NomeDeModalidadeDuplicado,
+    NomeDeModalidadeObrigatorio,
+)
 from propostas.forms import PropostaForm
 from propostas.models import Modalidade, Proposta
 from propostas.tests.factories import ModalidadeFactory, PropostaFactory, UsuarioFactory
@@ -30,6 +36,110 @@ def test_migration_cria_modalidades_iniciais(db):
         'Portabilidade + refinanciamento': True,
         'Cartão com saque': False,
     }
+
+
+def test_criar_modalidade_nasce_ativa_limpa_espacos_e_grava_historico(db):
+    usuario = UsuarioFactory()
+
+    modalidade = services.criar_modalidade(
+        usuario=usuario, nome='  Refinanciamento  ', envolve_portabilidade=True
+    )
+
+    salva = Modalidade.objects.get(pk=modalidade.pk)
+    assert salva.nome == 'Refinanciamento'
+    assert salva.ativo is True
+    assert salva.envolve_portabilidade is True
+    assert salva.history.first().history_user == usuario
+    assert salva in selectors.modalidades_ativas()
+    assert salva in selectors.listar_modalidades()
+
+
+def test_criar_modalidade_rejeita_nome_vazio_ou_duplicado(db):
+    usuario = UsuarioFactory()
+    total_inicial = Modalidade.objects.count()
+
+    with pytest.raises(NomeDeModalidadeObrigatorio):
+        services.criar_modalidade(usuario=usuario, nome='   ')
+
+    with pytest.raises(NomeDeModalidadeDuplicado):
+        services.criar_modalidade(usuario=usuario, nome='  consignado novo  ')
+
+    with pytest.raises(NomeDeModalidadeDuplicado):
+        services.criar_modalidade(usuario=usuario, nome='CARTÃO COM SAQUE')
+
+    assert Modalidade.objects.count() == total_inicial
+
+
+def test_editar_modalidade_altera_nome_portabilidade_e_grava_historico(db):
+    criador = UsuarioFactory()
+    editor = UsuarioFactory()
+    modalidade = services.criar_modalidade(
+        usuario=criador, nome='Portabilidade Pura', envolve_portabilidade=False
+    )
+
+    services.editar_modalidade(
+        usuario=editor,
+        modalidade=modalidade,
+        nome='  Portabilidade Pura  ',
+        envolve_portabilidade=True,
+    )
+
+    modalidade.refresh_from_db()
+    assert modalidade.nome == 'Portabilidade Pura'
+    assert modalidade.envolve_portabilidade is True
+    assert modalidade.history.count() == 2
+    assert modalidade.history.first().history_user == editor
+
+
+def test_editar_modalidade_rejeita_nome_de_outra(db):
+    usuario = UsuarioFactory()
+    modalidade = ModalidadeFactory(nome='Outra Modalidade')
+
+    with pytest.raises(NomeDeModalidadeDuplicado):
+        services.editar_modalidade(
+            usuario=usuario,
+            modalidade=modalidade,
+            nome='  consignado novo ',
+            envolve_portabilidade=False,
+        )
+
+    modalidade.refresh_from_db()
+    assert modalidade.nome == 'Outra Modalidade'
+
+
+def test_inativar_e_reativar_modalidade_registra_historico_e_preserva_existentes(db):
+    from contratos.tests.factories import ContratoFactory
+
+    autor_inativacao = UsuarioFactory()
+    autor_reativacao = UsuarioFactory()
+    modalidade = ModalidadeFactory(nome='Saque Aniversário')
+    contrato = ContratoFactory(proposta__modalidade=modalidade)
+    proposta = contrato.proposta
+
+    services.inativar_modalidade(usuario=autor_inativacao, modalidade=modalidade)
+    modalidade.refresh_from_db()
+    assert modalidade.ativo is False
+    assert modalidade.history.first().history_user == autor_inativacao
+    assert modalidade not in selectors.modalidades_ativas()
+    assert modalidade in selectors.listar_modalidades()
+    assert modalidade not in PropostaForm().fields['modalidade'].queryset
+
+    proposta.refresh_from_db()
+    contrato.refresh_from_db()
+    assert proposta.modalidade == modalidade
+    assert contrato.modalidade == modalidade
+
+    with pytest.raises(ModalidadeJaInativa):
+        services.inativar_modalidade(usuario=autor_inativacao, modalidade=modalidade)
+
+    services.reativar_modalidade(usuario=autor_reativacao, modalidade=modalidade)
+    modalidade.refresh_from_db()
+    assert modalidade.ativo is True
+    assert modalidade.history.first().history_user == autor_reativacao
+    assert modalidade in selectors.modalidades_ativas()
+
+    with pytest.raises(ModalidadeJaAtiva):
+        services.reativar_modalidade(usuario=autor_reativacao, modalidade=modalidade)
 
 
 def test_nome_duplicado_e_rejeitado(db):
@@ -124,42 +234,148 @@ def test_modalidade_aparece_na_lista_e_no_detalhe(client, db):
     assert 'Modalidade Visível' in detalhe.content.decode()
 
 
-def test_supervisor_gerencia_modalidade_no_admin_e_historico_registra_usuario(client, db):
-    supervisor = _usuario('Supervisor', 'sup')
+def test_operador_sem_permissao_recebe_403_nas_rotas_de_modalidades(client, db):
+    modalidade = ModalidadeFactory(nome='Original')
+    client.force_login(_usuario('Operador', 'op', staff=False))
+
+    assert client.get(reverse('modalidades:lista')).status_code == 403
+    assert client.get(reverse('modalidades:criar')).status_code == 403
+    assert client.post(reverse('modalidades:criar'), {'nome': 'X'}).status_code == 403
+    assert client.get(reverse('modalidades:editar', args=[modalidade.pk])).status_code == 403
+    assert (
+        client.post(reverse('modalidades:editar', args=[modalidade.pk]), {'nome': 'X'}).status_code
+        == 403
+    )
+    assert client.post(reverse('modalidades:inativar', args=[modalidade.pk])).status_code == 403
+    assert client.post(reverse('modalidades:reativar', args=[modalidade.pk])).status_code == 403
+
+    modalidade.refresh_from_db()
+    assert modalidade.nome == 'Original'
+    assert modalidade.ativo is True
+
+
+def test_usuario_so_com_view_modalidade_ve_listagem_sem_acoes_de_alteracao(client, db):
+    from django.contrib.auth.models import Permission
+
+    leitor = get_user_model().objects.create_user(username='leitor', password='x')
+    leitor.user_permissions.add(
+        Permission.objects.get(content_type__app_label='propostas', codename='view_modalidade')
+    )
+    inativa = ModalidadeFactory(nome='Modalidade Inativa', ativo=False, envolve_portabilidade=True)
+    client.force_login(leitor)
+
+    conteudo = client.get(reverse('modalidades:lista')).content.decode()
+
+    assert 'Consignado novo' in conteudo
+    assert 'Modalidade Inativa' in conteudo
+    assert 'Sim' in conteudo
+    assert 'Não' in conteudo
+    assert 'Ativa' in conteudo
+    assert 'Inativa' in conteudo
+    assert 'Nova Modalidade' not in conteudo
+    assert reverse('modalidades:editar', args=[inativa.pk]) not in conteudo
+    assert reverse('modalidades:reativar', args=[inativa.pk]) not in conteudo
+
+
+def test_supervisor_cria_edita_inativa_e_reativa_modalidade_pela_interface(client, db):
+    supervisor = _usuario('Supervisor', 'sup', staff=False)
     client.force_login(supervisor)
 
-    resposta = client.post(
-        reverse('admin:propostas_modalidade_add'),
-        {'nome': 'Nova', 'ativo': 'on', 'envolve_portabilidade': ''},
+    resposta_criar = client.post(
+        reverse('modalidades:criar'),
+        {'nome': '  Portabilidade Pura  ', 'envolve_portabilidade': 'on'},
+        follow=True,
     )
-    nova = Modalidade.objects.get(nome='Nova')
-    client.post(
-        reverse('admin:propostas_modalidade_change', args=[nova.pk]),
-        {'nome': 'Nova', 'envolve_portabilidade': ''},
+    assert 'Modalidade cadastrada.' in resposta_criar.content.decode()
+    modalidade = Modalidade.objects.get(nome='Portabilidade Pura')
+    assert modalidade.envolve_portabilidade is True
+    assert modalidade.ativo is True
+
+    resposta_editar = client.post(
+        reverse('modalidades:editar', args=[modalidade.pk]),
+        {'nome': 'Refinanciamento Puro'},
+        follow=True,
     )
+    assert 'Modalidade atualizada.' in resposta_editar.content.decode()
+    modalidade.refresh_from_db()
+    assert modalidade.nome == 'Refinanciamento Puro'
+    assert modalidade.envolve_portabilidade is False
 
-    nova.refresh_from_db()
-    assert resposta.status_code == 302
-    assert nova.ativo is False
-    assert nova.history.first().history_user == supervisor
-
-
-def test_operador_nao_acessa_cadastro_de_modalidade(client, db):
-    client.force_login(_usuario('Operador', 'op'))
-
-    resposta = client.get(reverse('admin:propostas_modalidade_changelist'))
-
-    assert resposta.status_code == 403
-
-
-def test_admin_bloqueia_apagar_modalidade_com_proposta(client, db):
-    client.force_login(_usuario('Supervisor', 'sup'))
-    proposta = PropostaFactory()
-
-    resposta = client.post(
-        reverse('admin:propostas_modalidade_delete', args=[proposta.modalidade.pk]),
-        {'post': 'yes'},
+    resposta_inativar = client.post(
+        reverse('modalidades:inativar', args=[modalidade.pk]), follow=True
     )
+    assert 'Modalidade inativada.' in resposta_inativar.content.decode()
+    modalidade.refresh_from_db()
+    assert modalidade.ativo is False
 
-    assert Modalidade.objects.filter(pk=proposta.modalidade.pk).exists()
-    assert resposta.status_code in (200, 403)
+    resposta_reativar = client.post(
+        reverse('modalidades:reativar', args=[modalidade.pk]), follow=True
+    )
+    assert 'Modalidade reativada.' in resposta_reativar.content.decode()
+    modalidade.refresh_from_db()
+    assert modalidade.ativo is True
+
+    registros = list(modalidade.history.all())
+    assert len(registros) == 4
+    assert all(r.history_user == supervisor for r in registros)
+
+
+def test_nome_duplicado_mostra_erro_amigavel_no_formulario_de_criacao_e_edicao(client, db):
+    supervisor = _usuario('Supervisor', 'sup', staff=False)
+    client.force_login(supervisor)
+    outra = ModalidadeFactory(nome='Outra Modalidade')
+
+    resposta_criar = client.post(reverse('modalidades:criar'), {'nome': '  consignado novo  '})
+    assert resposta_criar.status_code == 200
+    assert 'Já existe uma Modalidade com este nome.' in resposta_criar.content.decode()
+
+    resposta_editar = client.post(
+        reverse('modalidades:editar', args=[outra.pk]),
+        {'nome': '  CONSIGNADO NOVO  '},
+    )
+    assert resposta_editar.status_code == 200
+    assert 'Já existe uma Modalidade com este nome.' in resposta_editar.content.decode()
+    outra.refresh_from_db()
+    assert outra.nome == 'Outra Modalidade'
+
+
+def test_formularios_de_modalidade_exibem_breadcrumb_e_respeitam_retorno_contextual(client, db):
+    supervisor = _usuario('Supervisor', 'sup', staff=False)
+    client.force_login(supervisor)
+    modalidade = ModalidadeFactory(nome='Cartão Benefício')
+    url_lista = reverse('modalidades:lista')
+
+    html_criar = client.get(reverse('modalidades:criar')).content.decode()
+    trilha_criar = html_criar.split('<ol class="breadcrumb')[1].split('</ol>')[0]
+    assert f'<a href="{url_lista}">Modalidades</a>' in trilha_criar
+    assert 'aria-current="page">Nova Modalidade</li>' in trilha_criar
+    assert f'href="{url_lista}">Cancelar</a>' in html_criar
+
+    html_editar = client.get(reverse('modalidades:editar', args=[modalidade.pk])).content.decode()
+    trilha_editar = html_editar.split('<ol class="breadcrumb')[1].split('</ol>')[0]
+    assert f'<a href="{url_lista}">Modalidades</a>' in trilha_editar
+    assert 'aria-current="page">Editar Cartão Benefício</li>' in trilha_editar
+    assert f'href="{url_lista}">Cancelar</a>' in html_editar
+
+    html_next_seguro = client.get(
+        reverse('modalidades:criar'), {'next': '/propostas/nova/'}
+    ).content.decode()
+    assert 'href="/propostas/nova/">Cancelar</a>' in html_next_seguro
+
+    html_pos_erro = client.post(
+        reverse('modalidades:criar'), {'nome': '', 'next': '/propostas/nova/'}
+    ).content.decode()
+    assert 'href="/propostas/nova/">Cancelar</a>' in html_pos_erro
+
+    html_next_externo = client.get(
+        reverse('modalidades:editar', args=[modalidade.pk]),
+        {'next': 'https://malicioso.exemplo/roubo'},
+    ).content.decode()
+    assert f'href="{url_lista}">Cancelar</a>' in html_next_externo
+    assert 'malicioso' not in html_next_externo
+
+
+def test_modalidade_nao_fica_registrada_no_admin():
+    from django.contrib import admin
+
+    assert Modalidade not in admin.site._registry

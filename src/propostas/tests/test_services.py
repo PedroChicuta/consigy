@@ -239,13 +239,13 @@ def test_parcela_igual_a_margem_pode_ser_enviada(usuario):
 
 
 def test_bloqueia_parcela_acima_da_margem_com_valores_na_mensagem(usuario):
-    proposta = _proposta_com_margem(parcela='400.00', margem='350.00')
+    proposta = _proposta_com_margem(parcela='1400.00', margem='1350.00')
 
     with pytest.raises(ParcelaAcimaDaMargem) as erro:
         services.enviar_proposta(usuario=usuario, proposta=proposta)
 
-    assert '400.00' in str(erro.value)
-    assert '350.00' in str(erro.value)
+    assert 'R$ 1.400,00' in str(erro.value)
+    assert 'R$ 1.350,00' in str(erro.value)
     proposta.refresh_from_db()
     assert proposta.status == Proposta.Status.DIGITADA
 
@@ -353,8 +353,8 @@ def test_nao_pula_nem_volta_etapa(usuario, inicial, alvo):
         services.avancar_proposta(usuario=usuario, proposta=proposta, status=alvo)
 
 
-@pytest.mark.parametrize('inicial', ['digitada', 'enviada', 'em_analise', 'aprovada'])
-def test_recusa_de_qualquer_etapa_antes_de_formalizada(usuario, inicial):
+@pytest.mark.parametrize('inicial', ['enviada', 'em_analise', 'aprovada'])
+def test_recusa_de_qualquer_etapa_apos_envio_e_antes_de_formalizada(usuario, inicial):
     proposta = _com_status(inicial)
 
     services.recusar_proposta(usuario=usuario, proposta=proposta, motivo='Idade acima do limite')
@@ -362,6 +362,36 @@ def test_recusa_de_qualquer_etapa_antes_de_formalizada(usuario, inicial):
     proposta.refresh_from_db()
     assert proposta.status == Proposta.Status.RECUSADA
     assert proposta.motivo == 'Idade acima do limite'
+
+
+def test_nao_recusa_proposta_digitada(usuario):
+    proposta = _com_status(Proposta.Status.DIGITADA)
+
+    with pytest.raises(TransicaoInvalida):
+        services.recusar_proposta(usuario=usuario, proposta=proposta, motivo='Sem envio')
+
+    proposta.refresh_from_db()
+    assert proposta.status == Proposta.Status.DIGITADA
+
+
+@pytest.mark.parametrize(
+    ('status', 'esperado'),
+    [
+        (Proposta.Status.DIGITADA, False),
+        (Proposta.Status.ENVIADA, False),
+        (Proposta.Status.EM_ANALISE, False),
+        (Proposta.Status.AGUARDANDO_SALDO, False),
+        (Proposta.Status.PORTABILIDADE_AUTORIZADA, False),
+        (Proposta.Status.APROVADA, False),
+        (Proposta.Status.FORMALIZADA, True),
+        (Proposta.Status.RECUSADA, True),
+        (Proposta.Status.CANCELADA, True),
+    ],
+)
+def test_propriedade_encerrada_reflete_status_finais(db, status, esperado):
+    proposta = PropostaFactory.build(status=status)
+
+    assert proposta.encerrada is esperado
 
 
 @pytest.mark.parametrize('inicial', ['digitada', 'enviada', 'em_analise'])

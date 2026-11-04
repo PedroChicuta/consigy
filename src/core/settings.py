@@ -90,6 +90,12 @@ TEMPLATES = [
         'DIRS': [BASE_DIR / 'core' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
+            'builtins': [
+                'core.templatetags.formatacao',
+            ],
+            'libraries': {
+                'formatacao': 'core.templatetags.formatacao',
+            },
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',

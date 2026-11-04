@@ -1,0 +1,15 @@
+{% extends 'formularios/pagina.html' %}
+
+{% block titulo %}{% if modalidade %}Editar Modalidade{% else %}Nova Modalidade{% endif %} · Consignado{% endblock %}
+{% block breadcrumb %}
+  {% url 'modalidades:lista' as url_modalidades %}
+  {% if modalidade %}
+    {% with rotulo_atual='Editar '|add:modalidade.nome %}
+      {% include 'componentes/_breadcrumb.html' with n1='Modalidades' u1=url_modalidades atual=rotulo_atual %}
+    {% endwith %}
+  {% else %}
+    {% include 'componentes/_breadcrumb.html' with n1='Modalidades' u1=url_modalidades atual='Nova Modalidade' %}
+  {% endif %}
+{% endblock %}
+{% block titulo_formulario %}{% if modalidade %}Editar {{ modalidade.nome }}{% else %}Nova Modalidade{% endif %}{% endblock %}
+{% block url_cancelar %}{% url 'modalidades:lista' %}{% endblock %}

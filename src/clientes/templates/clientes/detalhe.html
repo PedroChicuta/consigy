@@ -2,6 +2,11 @@
 
 {% block titulo %}{{ cliente.nome }} · Consignado{% endblock %}
 
+{% block breadcrumb %}
+  {% url 'clientes:lista' as url_clientes %}
+  {% include 'componentes/_breadcrumb.html' with n1='Clientes' u1=url_clientes atual=cliente.nome %}
+{% endblock %}
+
 {% block conteudo %}
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">{{ cliente.nome }}
@@ -9,7 +14,7 @@
     </h1>
     {% if perms.clientes.change_cliente %}
       <div class="d-flex gap-2">
-        <a class="btn btn-outline-primary" href="{% url 'clientes:editar' cliente.pk %}">Editar</a>
+        <a class="btn btn-outline-primary" href="{% url 'clientes:editar' cliente.pk %}?next={{ request.path }}">Editar</a>
         <form method="post" action="{% if cliente.ativo %}{% url 'clientes:inativar' cliente.pk %}{% else %}{% url 'clientes:reativar' cliente.pk %}{% endif %}">
           {% csrf_token %}
           <button class="btn btn-outline-secondary" type="submit">{% if cliente.ativo %}Inativar{% else %}Reativar{% endif %}</button>
@@ -20,14 +25,14 @@
   <dl class="row">
     <dt class="col-sm-3">CPF</dt><dd class="col-sm-9">{{ cliente.cpf_formatado }}</dd>
     <dt class="col-sm-3">Data de nascimento</dt><dd class="col-sm-9">{{ cliente.data_nascimento|date:'d/m/Y' }}</dd>
-    <dt class="col-sm-3">Telefone</dt><dd class="col-sm-9">{{ cliente.telefone }}</dd>
+    <dt class="col-sm-3">Telefone</dt><dd class="col-sm-9">{{ cliente.telefone|telefone }}</dd>
     <dt class="col-sm-3">E-mail</dt><dd class="col-sm-9">{{ cliente.email|default:'—' }}</dd>
   </dl>
 
   <div class="d-flex justify-content-between align-items-center mt-4">
     <h2 class="h5 mb-0">Benefícios</h2>
     {% if cliente.ativo and perms.beneficios.add_beneficio %}
-      <a class="btn btn-sm btn-outline-primary" href="{% url 'beneficios:criar' cliente.pk %}">Novo Benefício</a>
+      <a class="btn btn-sm btn-outline-primary" href="{% url 'beneficios:criar' cliente.pk %}?next={{ request.path }}">Novo Benefício</a>
     {% endif %}
   </div>
   <table class="table table-sm">
@@ -57,15 +62,15 @@
     <div class="d-flex justify-content-between align-items-center mt-4">
       <h2 class="h5 mb-0">Propostas</h2>
       {% if cliente.ativo and perms.propostas.add_proposta %}
-        <a class="btn btn-sm btn-outline-primary" href="{% url 'propostas:criar' %}">Nova Proposta</a>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'propostas:criar' %}?next={{ request.path }}">Nova Proposta</a>
       {% endif %}
     </div>
-    {% include 'propostas/partials/_linhas.html' with propostas=propostas %}
+    {% include 'propostas/partials/_linhas.html' with propostas=propostas ocultar_cliente=True %}
   {% endif %}
 
   {% if contratos is not None %}
     <h2 class="h5 mt-4">Contratos</h2>
-    {% include 'contratos/partials/_linhas.html' %}
+    {% include 'contratos/partials/_linhas.html' with contratos=contratos ocultar_cliente=True %}
   {% endif %}
 
   {% if historico %}
@@ -79,7 +84,7 @@
             <td>{{ item.registro.history_user|default:'—' }}</td>
             <td>
               {% if item.registro.history_type == '+' %}Cadastro
-              {% else %}{% for mudanca in item.mudancas %}{{ mudanca.field }}: {{ mudanca.old }} → {{ mudanca.new }}{% if not forloop.last %}; {% endif %}{% endfor %}
+              {% else %}{% for mudanca in item.mudancas %}{{ mudanca.field }}: {% if mudanca.field == 'telefone' %}{{ mudanca.old|telefone }} → {{ mudanca.new|telefone }}{% else %}{{ mudanca.old }} → {{ mudanca.new }}{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}
               {% endif %}
             </td>
           </tr>

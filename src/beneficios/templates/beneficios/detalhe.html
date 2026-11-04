@@ -2,6 +2,14 @@
 
 {% block titulo %}Benefício {{ beneficio.numero }} · Consignado{% endblock %}
 
+{% block breadcrumb %}
+  {% url 'clientes:lista' as url_clientes %}
+  {% url 'clientes:detalhe' beneficio.cliente.pk as url_cliente %}
+  {% with rotulo_atual='Benefício '|add:beneficio.numero %}
+    {% include 'componentes/_breadcrumb.html' with n1='Clientes' u1=url_clientes n2=beneficio.cliente.nome u2=url_cliente atual=rotulo_atual %}
+  {% endwith %}
+{% endblock %}
+
 {% block conteudo %}
   <h1 class="h3">Benefício {{ beneficio.numero }}
     {% if not beneficio.ativo %}<span class="badge text-bg-secondary">Inativo</span>{% endif %}
@@ -13,7 +21,7 @@
     <dt class="col-sm-3">Margem vigente</dt>
     <dd class="col-sm-9">
       {% if margem_vigente %}
-        R$ {{ margem_vigente.valor }} (consulta de {{ margem_vigente.data_consulta|date:'d/m/Y' }})
+        {{ margem_vigente.valor|moeda }} (consulta de {{ margem_vigente.data_consulta|date:'d/m/Y' }})
         {% if margem_vigente.antiga %}
           <div class="alert alert-warning mt-2 mb-0">Margem com mais de 30 dias: faça uma nova consulta.</div>
         {% endif %}
@@ -35,7 +43,7 @@
     <thead><tr><th>Data da consulta</th><th>Valor</th></tr></thead>
     <tbody>
       {% for margem in margens %}
-        <tr><td>{{ margem.data_consulta|date:'d/m/Y' }}</td><td>R$ {{ margem.valor }}</td></tr>
+        <tr><td>{{ margem.data_consulta|date:'d/m/Y' }}</td><td>{{ margem.valor|moeda }}</td></tr>
       {% empty %}
         <tr><td colspan="2">Nenhuma Margem registrada.</td></tr>
       {% endfor %}

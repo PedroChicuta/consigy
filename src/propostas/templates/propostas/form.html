@@ -1,6 +1,19 @@
 {% extends 'formularios/pagina.html' %}
 
 {% block titulo %}{% if proposta %}Editar Proposta{% else %}Nova Proposta{% endif %} · Consignado{% endblock %}
+{% block breadcrumb %}
+  {% url 'propostas:lista' as url_propostas %}
+  {% if proposta %}
+    {% url 'propostas:detalhe' proposta.pk as url_proposta %}
+    {% with pk_str=proposta.pk|stringformat:'s' %}
+      {% with rotulo_proposta='Proposta '|add:pk_str rotulo_atual='Editar Proposta '|add:pk_str %}
+        {% include 'componentes/_breadcrumb.html' with n1='Propostas' u1=url_propostas n2=rotulo_proposta u2=url_proposta atual=rotulo_atual %}
+      {% endwith %}
+    {% endwith %}
+  {% else %}
+    {% include 'componentes/_breadcrumb.html' with n1='Propostas' u1=url_propostas atual='Nova Proposta' %}
+  {% endif %}
+{% endblock %}
 {% block titulo_formulario %}{% if proposta %}Editar Proposta {{ proposta.pk }}{% else %}Nova Proposta{% endif %}{% endblock %}
 {% block descricao_formulario %}<p class="text-body-secondary mb-0">Condições oferecidas pelo Banco.</p>{% endblock %}
 {% block url_cancelar %}{% if proposta %}{% url 'propostas:detalhe' proposta.pk %}{% else %}{% url 'propostas:lista' %}{% endif %}{% endblock %}

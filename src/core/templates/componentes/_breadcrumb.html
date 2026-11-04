@@ -1,0 +1,27 @@
+{% comment %}
+  Trilha de navegação (ADR 0012).
+  Aceita `breadcrumbs` (lista de `(rotulo, url)` no contexto) ou parâmetros diretos
+  via include: `n1`/`u1`, `n2`/`u2`, `n3`/`u3` e `atual`.
+{% endcomment %}
+{% if breadcrumbs %}
+  <nav aria-label="Trilha de navegação" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      {% for rotulo, url in breadcrumbs %}
+        {% if url and not forloop.last %}
+          <li class="breadcrumb-item"><a href="{{ url }}">{{ rotulo }}</a></li>
+        {% else %}
+          <li class="breadcrumb-item active" aria-current="page">{{ rotulo }}</li>
+        {% endif %}
+      {% endfor %}
+    </ol>
+  </nav>
+{% elif atual %}
+  <nav aria-label="Trilha de navegação" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      {% if n1 %}<li class="breadcrumb-item"><a href="{{ u1 }}">{{ n1 }}</a></li>{% endif %}
+      {% if n2 %}<li class="breadcrumb-item"><a href="{{ u2 }}">{{ n2 }}</a></li>{% endif %}
+      {% if n3 %}<li class="breadcrumb-item"><a href="{{ u3 }}">{{ n3 }}</a></li>{% endif %}
+      <li class="breadcrumb-item active" aria-current="page">{{ atual }}</li>
+    </ol>
+  </nav>
+{% endif %}

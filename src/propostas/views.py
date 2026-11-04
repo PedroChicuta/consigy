@@ -9,7 +9,7 @@ from contratos import selectors as contratos_selectors
 from core.exceptions import ErroDeNegocio
 from propostas import selectors, services
 from propostas.exceptions import MargemAntigaSemConfirmacao
-from propostas.forms import MotivoForm, ObservacoesForm, PropostaForm
+from propostas.forms import ModalidadeForm, MotivoForm, ObservacoesForm, PropostaForm
 from propostas.models import Modalidade, Proposta
 
 POR_PAGINA = 25
@@ -38,7 +38,7 @@ class ListaView(PermissaoNecessariaMixin, View):
             'status': status,
             'banco': banco,
             'modalidade': modalidade,
-            'modalidades': Modalidade.objects.all(),
+            'modalidades': selectors.listar_modalidades(),
             'cliente': cliente,
             'status_opcoes': Proposta.Status.choices,
             'bancos': bancos_selectors.listar_bancos(),
@@ -84,23 +84,25 @@ class DetalheView(PermissaoNecessariaMixin, View):
 
     def get(self, request, pk):
         proposta = _buscar(pk)
-        historico = None
-        if request.user.has_perm('propostas.view_historicalproposta'):
-            historico = selectors.historico_da_proposta(proposta=proposta)
-        contratos = None
-        if request.user.has_perm('contratos.view_contrato'):
-            contratos = contratos_selectors.contratos_da_proposta(proposta=proposta)
         return render(
             request,
             'propostas/detalhe.html',
-            _contexto_detalhe(proposta, historico=historico, contratos=contratos),
+            _contexto_detalhe(proposta, usuario=request.user),
         )
 
 
-def _contexto_detalhe(proposta, **extra):
+def _contexto_detalhe(proposta, *, usuario=None, **extra):
+    historico = None
+    contratos = None
+    if usuario is not None:
+        if usuario.has_perm('propostas.view_historicalproposta'):
+            historico = selectors.historico_da_proposta(proposta=proposta)
+        if usuario.has_perm('contratos.view_contrato'):
+            contratos = contratos_selectors.contratos_da_proposta(proposta=proposta)
     return {
         'proposta': proposta,
-        'historico': None,
+        'historico': historico,
+        'contratos': contratos,
         'form_observacoes': ObservacoesForm(initial={'observacoes': proposta.observacoes}),
         'form_recusar': MotivoForm(auto_id='recusar_%s'),
         'form_cancelar': MotivoForm(auto_id='cancelar_%s'),
@@ -121,7 +123,7 @@ class EnviarView(PermissaoNecessariaMixin, View):
             )
         except MargemAntigaSemConfirmacao as erro:
             messages.warning(request, str(erro))
-            contexto = _contexto_detalhe(proposta, pedir_confirmacao=True)
+            contexto = _contexto_detalhe(proposta, usuario=request.user, pedir_confirmacao=True)
             return render(request, 'propostas/detalhe.html', contexto)
         except ErroDeNegocio as erro:
             messages.error(request, str(erro))
@@ -207,39 +209,49 @@ class FormalizarView(PermissaoNecessariaMixin, View):
     def post(self, request, pk):
         proposta = _buscar(pk)
         try:
-            services.formalizar_proposta(usuario=request.user, proposta=proposta)
+            contrato = services.formalizar_proposta(usuario=request.user, proposta=proposta)
         except ErroDeNegocio as erro:
             messages.error(request, str(erro))
-        else:
-            messages.success(request, 'Proposta formalizada e Contrato criado.')
-        return redirect('propostas:detalhe', pk=proposta.pk)
+            return redirect('propostas:detalhe', pk=proposta.pk)
+        messages.success(
+            request,
+            f'Proposta #{proposta.pk} formalizada. Este é o Contrato #{contrato.pk} gerado.',
+        )
+        return redirect('contratos:detalhe', pk=contrato.pk)
 
 
 class _EncerrarView(PermissaoNecessariaMixin, View):
     permission_required = 'propostas.change_proposta'
     http_method_names = ['post']
     mensagem = ''
+    auto_id = '%s'
+    chave_form = ''
 
     def encerrar(self, **kwargs):
         raise NotImplementedError
 
     def post(self, request, pk):
         proposta = _buscar(pk)
-        form = MotivoForm(request.POST)
+        form = MotivoForm(request.POST, auto_id=self.auto_id)
         if not form.is_valid():
             messages.error(request, 'Informe o motivo.')
+            contexto = _contexto_detalhe(
+                proposta, usuario=request.user, **{self.chave_form: form}
+            )
+            return render(request, 'propostas/detalhe.html', contexto)
+        try:
+            self.encerrar(usuario=request.user, proposta=proposta, **form.cleaned_data)
+        except ErroDeNegocio as erro:
+            messages.error(request, str(erro))
         else:
-            try:
-                self.encerrar(usuario=request.user, proposta=proposta, **form.cleaned_data)
-            except ErroDeNegocio as erro:
-                messages.error(request, str(erro))
-            else:
-                messages.success(request, self.mensagem)
+            messages.success(request, self.mensagem)
         return redirect('propostas:detalhe', pk=proposta.pk)
 
 
 class RecusarView(_EncerrarView):
     mensagem = 'Proposta recusada.'
+    auto_id = 'recusar_%s'
+    chave_form = 'form_recusar'
 
     def encerrar(self, **kwargs):
         services.recusar_proposta(**kwargs)
@@ -247,6 +259,108 @@ class RecusarView(_EncerrarView):
 
 class CancelarView(_EncerrarView):
     mensagem = 'Proposta cancelada.'
+    auto_id = 'cancelar_%s'
+    chave_form = 'form_cancelar'
 
     def encerrar(self, **kwargs):
         services.cancelar_proposta(**kwargs)
+
+
+class ModalidadeListaView(PermissaoNecessariaMixin, View):
+    permission_required = 'propostas.view_modalidade'
+
+    def get(self, request):
+        return render(
+            request,
+            'propostas/modalidades/lista.html',
+            {'modalidades': selectors.listar_modalidades()},
+        )
+
+
+class ModalidadeCriarView(PermissaoNecessariaMixin, View):
+    permission_required = 'propostas.add_modalidade'
+
+    def get(self, request):
+        return render(request, 'propostas/modalidades/form.html', {'form': ModalidadeForm()})
+
+    def post(self, request):
+        form = ModalidadeForm(request.POST)
+        if form.is_valid():
+            try:
+                services.criar_modalidade(usuario=request.user, **form.cleaned_data)
+            except ErroDeNegocio as erro:
+                form.add_error(None, str(erro))
+            else:
+                messages.success(request, 'Modalidade cadastrada.')
+                return redirect('modalidades:lista')
+        return render(request, 'propostas/modalidades/form.html', {'form': form})
+
+
+class ModalidadeEditarView(PermissaoNecessariaMixin, View):
+    permission_required = 'propostas.change_modalidade'
+
+    def get(self, request, pk):
+        modalidade = get_object_or_404(Modalidade, pk=pk)
+        form = ModalidadeForm(
+            initial={
+                'nome': modalidade.nome,
+                'envolve_portabilidade': modalidade.envolve_portabilidade,
+            }
+        )
+        return render(
+            request,
+            'propostas/modalidades/form.html',
+            {'form': form, 'modalidade': modalidade},
+        )
+
+    def post(self, request, pk):
+        modalidade = get_object_or_404(Modalidade, pk=pk)
+        form = ModalidadeForm(request.POST)
+        if form.is_valid():
+            try:
+                services.editar_modalidade(
+                    usuario=request.user, modalidade=modalidade, **form.cleaned_data
+                )
+            except ErroDeNegocio as erro:
+                form.add_error(None, str(erro))
+            else:
+                messages.success(request, 'Modalidade atualizada.')
+                return redirect('modalidades:lista')
+        return render(
+            request,
+            'propostas/modalidades/form.html',
+            {'form': form, 'modalidade': modalidade},
+        )
+
+
+class _MudarSituacaoModalidadeView(PermissaoNecessariaMixin, View):
+    permission_required = 'propostas.change_modalidade'
+    http_method_names = ['post']
+    mensagem = ''
+
+    def executar(self, *, usuario, modalidade):
+        raise NotImplementedError
+
+    def post(self, request, pk):
+        modalidade = get_object_or_404(Modalidade, pk=pk)
+        try:
+            self.executar(usuario=request.user, modalidade=modalidade)
+        except ErroDeNegocio as erro:
+            messages.error(request, str(erro))
+        else:
+            messages.success(request, self.mensagem)
+        return redirect('modalidades:lista')
+
+
+class ModalidadeInativarView(_MudarSituacaoModalidadeView):
+    mensagem = 'Modalidade inativada.'
+
+    def executar(self, *, usuario, modalidade):
+        services.inativar_modalidade(usuario=usuario, modalidade=modalidade)
+
+
+class ModalidadeReativarView(_MudarSituacaoModalidadeView):
+    mensagem = 'Modalidade reativada.'
+
+    def executar(self, *, usuario, modalidade):
+        services.reativar_modalidade(usuario=usuario, modalidade=modalidade)

@@ -2,6 +2,7 @@ import pytest
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
+from django.template import Context, Template
 from django.urls import reverse
 
 
@@ -73,7 +74,11 @@ def test_erros_gerais_aparecem_em_alerta():
 @pytest.fixture
 def client_operador(client, db):
     user = get_user_model().objects.create_user(username='maria', password='x')
-    for app, codigo in (('clientes', 'add_cliente'), ('bancos', 'add_banco')):
+    for app, codigo in (
+        ('clientes', 'add_cliente'),
+        ('bancos', 'add_banco'),
+        ('propostas', 'add_modalidade'),
+    ):
         user.user_permissions.add(
             Permission.objects.get(content_type__app_label=app, codename=codigo)
         )
@@ -81,7 +86,7 @@ def client_operador(client, db):
     return client
 
 
-@pytest.mark.parametrize('rota', ['clientes:criar', 'bancos:criar'])
+@pytest.mark.parametrize('rota', ['clientes:criar', 'bancos:criar', 'modalidades:criar'])
 def test_paginas_de_formulario_seguem_o_padrao(client_operador, rota):
     html = client_operador.get(reverse(rota)).content.decode()
 
@@ -91,9 +96,92 @@ def test_paginas_de_formulario_seguem_o_padrao(client_operador, rota):
     assert html.index('>Cancelar</a>') < html.index('>Salvar</button>')
 
 
+def test_cancelar_usa_next_seguro_quando_informado(client_operador):
+    resposta = client_operador.get(reverse('clientes:criar'), {'next': '/clientes/42/'})
+    html = resposta.content.decode()
+
+    assert 'href="/clientes/42/">Cancelar</a>' in html
+    assert 'name="next" value="/clientes/42/"' in html
+
+    html_pos_erro = client_operador.post(
+        reverse('clientes:criar'), {'nome': '', 'next': '/clientes/42/'}
+    ).content.decode()
+    assert 'href="/clientes/42/">Cancelar</a>' in html_pos_erro
+
+
+@pytest.mark.parametrize(
+    'next_invalido',
+    [
+        'https://malicioso.exemplo/roubo',
+        '//malicioso.exemplo/roubo',
+        'javascript:alert(1)',
+        'caminho-sem-barra',
+        '   ',
+    ],
+)
+def test_cancelar_ignora_next_invalido_ou_externo(client_operador, next_invalido):
+    html = client_operador.get(reverse('clientes:criar'), {'next': next_invalido}).content.decode()
+
+    assert f'href="{reverse("clientes:lista")}">Cancelar</a>' in html
+    assert 'malicioso' not in html
+
+
+def test_pagina_de_formulario_suporta_botoes_secundarios_de_submissao():
+    tpl = Template(
+        "{% extends 'formularios/pagina.html' %}"
+        "{% block titulo_formulario %}Novo Cliente{% endblock %}"
+        "{% block url_cancelar %}/clientes/{% endblock %}"
+        "{% block acoes_extras %}"
+        '<button class="btn btn-outline-primary" type="submit" name="acao" value="beneficio">'
+        'Salvar e adicionar Benefício</button>'
+        "{% endblock %}"
+    )
+    html = tpl.render(
+        Context(
+            {
+                'form': _Form(),
+                'acoes_extras': [
+                    {'rotulo': 'Ignorado se bloco sobrescrito', 'valor': 'x'},
+                ],
+            }
+        )
+    )
+    rodape = html.split('formulario-acoes')[1].split('</div>')[0]
+
+    assert 'href="/clientes/">Cancelar</a>' in rodape
+    assert 'name="acao" value="beneficio">Salvar e adicionar Benefício</button>' in rodape
+    assert '>Salvar</button>' in rodape
+    pos_cancelar = rodape.index('Cancelar')
+    pos_secundario = rodape.index('Salvar e adicionar Benefício')
+    assert pos_cancelar < pos_secundario < rodape.index('>Salvar</button>')
+
+
+def test_pagina_de_formulario_renderiza_acoes_extras_do_contexto():
+    tpl = Template(
+        "{% extends 'formularios/pagina.html' %}"
+        "{% block titulo_formulario %}Novo Benefício{% endblock %}"
+        "{% block url_cancelar %}/clientes/1/{% endblock %}"
+    )
+    html = tpl.render(
+        Context(
+            {
+                'form': _Form(),
+                'acoes_extras': [
+                    {'rotulo': 'Salvar e criar Proposta', 'valor': 'criar_proposta'},
+                ],
+            }
+        )
+    )
+    rodape = html.split('formulario-acoes')[1].split('</div>')[0]
+
+    assert 'name="acao" value="criar_proposta">Salvar e criar Proposta</button>' in rodape
+    assert '>Salvar</button>' in rodape
+
+
 def test_login_segue_o_padrao(client, db):
     html = client.get(reverse('accounts:login')).content.decode()
 
     assert 'class="card shadow-sm"' in html
     assert 'name="username"' in html
     assert 'form-control' in html
+

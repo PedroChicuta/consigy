@@ -1,7 +1,17 @@
 from django.db.models import Q
 
 from clientes.cpf import normalizar_cpf
-from propostas.models import Proposta
+from propostas.models import Modalidade, Proposta
+
+
+def listar_modalidades():
+    """Todas as Modalidades, ativas e inativas, para a consulta da lista."""
+    return Modalidade.objects.all()
+
+
+def modalidades_ativas():
+    """Modalidades disponíveis como escolha para novas Propostas."""
+    return Modalidade.objects.filter(ativo=True)
 
 
 def _base():

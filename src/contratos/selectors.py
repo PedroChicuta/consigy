@@ -10,7 +10,7 @@ def contratos_da_proposta(*, proposta):
 
 def contratos_do_cliente(*, cliente):
     return Contrato.objects.select_related(
-        'proposta__beneficio__cliente', 'proposta__banco'
+        'proposta__beneficio__cliente', 'proposta__banco', 'modalidade'
     ).filter(proposta__beneficio__cliente=cliente)
 
 

@@ -2,6 +2,15 @@
 
 {% block titulo %}Contrato {{ contrato.pk }} · Consignado{% endblock %}
 
+{% block breadcrumb %}
+  {% url 'contratos:lista' as url_contratos %}
+  {% with pk_str=contrato.pk|stringformat:'s' %}
+    {% with rotulo_atual='Contrato '|add:pk_str %}
+      {% include 'componentes/_breadcrumb.html' with n1='Contratos' u1=url_contratos atual=rotulo_atual %}
+    {% endwith %}
+  {% endwith %}
+{% endblock %}
+
 {% block conteudo %}
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">Contrato {{ contrato.pk }}
@@ -21,13 +30,13 @@
     <dt class="col-sm-3">Cliente</dt>
     <dd class="col-sm-9"><a href="{% url 'clientes:detalhe' contrato.cliente.pk %}">{{ contrato.cliente.nome }}</a></dd>
     <dt class="col-sm-3">Proposta</dt>
-    <dd class="col-sm-9"><a href="{% url 'propostas:detalhe' contrato.proposta_id %}">{{ contrato.proposta_id }}</a></dd>
+    <dd class="col-sm-9"><a href="{% url 'propostas:detalhe' contrato.proposta_id %}">#{{ contrato.proposta_id }}</a></dd>
     <dt class="col-sm-3">Banco</dt><dd class="col-sm-9">{{ contrato.proposta.banco.nome }}</dd>
     <dt class="col-sm-3">Modalidade</dt><dd class="col-sm-9">{{ contrato.modalidade.nome }}</dd>
-    <dt class="col-sm-3">Valor</dt><dd class="col-sm-9">R$ {{ contrato.valor }}</dd>
-    <dt class="col-sm-3">Valor liberado</dt><dd class="col-sm-9">R$ {{ contrato.valor_liberado }}</dd>
+    <dt class="col-sm-3">Valor</dt><dd class="col-sm-9">{{ contrato.valor|moeda }}</dd>
+    <dt class="col-sm-3">Valor liberado</dt><dd class="col-sm-9">{{ contrato.valor_liberado|moeda }}</dd>
     <dt class="col-sm-3">Prazo</dt><dd class="col-sm-9">{{ contrato.prazo }} meses</dd>
-    <dt class="col-sm-3">Parcela</dt><dd class="col-sm-9">R$ {{ contrato.parcela }}</dd>
+    <dt class="col-sm-3">Parcela</dt><dd class="col-sm-9">{{ contrato.parcela|moeda }}</dd>
     <dt class="col-sm-3">Taxa</dt><dd class="col-sm-9">{{ contrato.taxa }}% a.m.</dd>
     {% if contrato.data_pagamento %}<dt class="col-sm-3">Pago em</dt><dd class="col-sm-9">{{ contrato.data_pagamento|date:'d/m/Y' }}</dd>{% endif %}
     {% if contrato.motivo %}<dt class="col-sm-3">Motivo</dt><dd class="col-sm-9">{{ contrato.motivo|linebreaksbr }}</dd>{% endif %}
@@ -35,9 +44,14 @@
   </dl>
   {% if perms.contratos.change_contrato %}
     {% if contrato.status == 'formalizado' or contrato.status == 'averbado' %}
-      <div class="formulario mb-4">
-        {% url 'contratos:cancelar' contrato.pk as acao %}
-        {% include 'formularios/_cartao.html' with form=form_cancelar acao=acao titulo='Cancelar Contrato' rotulo='Cancelar Contrato' estilo_botao='btn-outline-danger' validar_no_navegador=True %}
+      <div class="mb-4">
+        <button class="btn btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#encerrar-cancelar" aria-expanded="{% if form_cancelar.errors %}true{% else %}false{% endif %}" aria-controls="encerrar-cancelar">
+          Cancelar Contrato
+        </button>
+        <div id="encerrar-cancelar" class="collapse{% if form_cancelar.errors %} show{% endif %} formulario mt-3">
+          {% url 'contratos:cancelar' contrato.pk as acao %}
+          {% include 'formularios/_cartao.html' with form=form_cancelar acao=acao titulo='Cancelar Contrato' rotulo='Cancelar Contrato' estilo_botao='btn-outline-danger' validar_no_navegador=True %}
+        </div>
       </div>
     {% endif %}
   {% endif %}

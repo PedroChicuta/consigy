@@ -135,3 +135,24 @@ def test_lista_e_paginada(client, operador):
     assert 'Cliente 00' in pagina1
     assert 'Cliente 29' not in pagina1
     assert 'Cliente 29' in pagina2
+
+
+def test_telefones_aparecem_formatados_na_lista_e_na_ficha(client, operador):
+    celular = ClienteFactory(cpf='52998224725', telefone='11988887777')
+    fixo = ClienteFactory(cpf='11144477735', telefone='1133334444')
+    outro = ClienteFactory(cpf='39053344705', telefone='0800123')
+
+    lista = client.get(reverse('clientes:lista')).content.decode()
+    assert '(11) 98888-7777' in lista
+    assert '(11) 3333-4444' in lista
+    assert '0800123' in lista
+
+    assert (
+        '(11) 98888-7777'
+        in client.get(reverse('clientes:detalhe', args=[celular.pk])).content.decode()
+    )
+    assert (
+        '(11) 3333-4444'
+        in client.get(reverse('clientes:detalhe', args=[fixo.pk])).content.decode()
+    )
+    assert '0800123' in client.get(reverse('clientes:detalhe', args=[outro.pk])).content.decode()

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Modalidades · Consignado{% endblock %}
+
+{% block conteudo %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Modalidades</h1>
+    {% if perms.propostas.add_modalidade %}
+      <a class="btn btn-primary" href="{% url 'modalidades:criar' %}">Nova Modalidade</a>
+    {% endif %}
+  </div>
+  <table class="table table-hover">
+    <thead><tr><th>Nome</th><th>Envolve portabilidade</th><th>Situação</th><th></th></tr></thead>
+    <tbody>
+      {% for modalidade in modalidades %}
+        <tr>
+          <td>{{ modalidade.nome }}</td>
+          <td>{% if modalidade.envolve_portabilidade %}Sim{% else %}Não{% endif %}</td>
+          <td>{% if modalidade.ativo %}Ativa{% else %}<span class="text-muted">Inativa</span>{% endif %}</td>
+          <td>
+            {% if perms.propostas.change_modalidade %}
+              <div class="d-flex gap-2 justify-content-end">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'modalidades:editar' modalidade.pk %}">Editar</a>
+                <form method="post" action="{% if modalidade.ativo %}{% url 'modalidades:inativar' modalidade.pk %}{% else %}{% url 'modalidades:reativar' modalidade.pk %}{% endif %}">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-secondary" type="submit">{% if modalidade.ativo %}Inativar{% else %}Reativar{% endif %}</button>
+                </form>
+              </div>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="text-muted">Nenhuma Modalidade cadastrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
