@@ -31,9 +31,24 @@ class ListaView(PermissaoNecessariaMixin, View):
 
 class CriarView(PermissaoNecessariaMixin, View):
     permission_required = 'clientes.add_cliente'
+    acoes_extras = [
+        {
+            'rotulo': 'Salvar e adicionar Benefício',
+            'valor': 'salvar_adicionar_beneficio',
+            'estilo': 'btn-outline-primary',
+        }
+    ]
 
     def get(self, request):
-        return render(request, 'clientes/form.html', {'form': NovoClienteForm()})
+        initial = {}
+        cpf = request.GET.get('cpf', '').strip()
+        if cpf:
+            initial['cpf'] = cpf
+        return render(
+            request,
+            'clientes/form.html',
+            {'form': NovoClienteForm(initial=initial), 'acoes_extras': self.acoes_extras},
+        )
 
     def post(self, request):
         form = NovoClienteForm(request.POST)
@@ -47,8 +62,12 @@ class CriarView(PermissaoNecessariaMixin, View):
                 form.add_error('cpf', str(erro))
             else:
                 messages.success(request, 'Cliente cadastrado.')
+                if request.POST.get('acao') == 'salvar_adicionar_beneficio':
+                    return redirect('beneficios:criar', cliente_pk=cliente.pk)
                 return redirect('clientes:detalhe', pk=cliente.pk)
-        return render(request, 'clientes/form.html', {'form': form})
+        return render(
+            request, 'clientes/form.html', {'form': form, 'acoes_extras': self.acoes_extras}
+        )
 
 
 class DetalheView(PermissaoNecessariaMixin, View):
@@ -56,9 +75,12 @@ class DetalheView(PermissaoNecessariaMixin, View):
 
     def get(self, request, pk):
         cliente = get_object_or_404(Cliente, pk=pk)
+        beneficios = list(beneficios_selectors.beneficios_do_cliente(cliente=cliente))
+        beneficios_ativos = [b for b in beneficios if b.ativo]
         contexto = {
             'cliente': cliente,
-            'beneficios': beneficios_selectors.beneficios_do_cliente(cliente=cliente),
+            'beneficios': beneficios,
+            'beneficios_ativos': beneficios_ativos,
         }
         if request.user.has_perm('propostas.view_proposta'):
             contexto['propostas'] = propostas_selectors.propostas_do_cliente(cliente=cliente)

@@ -202,6 +202,80 @@ def enviar_proposta(*, usuario, proposta, confirmar_margem_antiga=False):
 
 
 @transaction.atomic
+def criar_e_enviar_proposta(
+    *,
+    usuario,
+    beneficio,
+    banco,
+    modalidade,
+    valor,
+    valor_liberado,
+    prazo,
+    parcela,
+    taxa,
+    observacoes='',
+    confirmar_margem_antiga=False,
+):
+    """Cria a Proposta e a envia ao Banco em uma única transação atômica."""
+    proposta = criar_proposta(
+        usuario=usuario,
+        beneficio=beneficio,
+        banco=banco,
+        modalidade=modalidade,
+        valor=valor,
+        valor_liberado=valor_liberado,
+        prazo=prazo,
+        parcela=parcela,
+        taxa=taxa,
+        observacoes=observacoes,
+    )
+    enviar_proposta(
+        usuario=usuario,
+        proposta=proposta,
+        confirmar_margem_antiga=confirmar_margem_antiga,
+    )
+    return proposta
+
+
+@transaction.atomic
+def editar_e_enviar_proposta(
+    *,
+    usuario,
+    proposta,
+    beneficio,
+    banco,
+    modalidade,
+    valor,
+    valor_liberado,
+    prazo,
+    parcela,
+    taxa,
+    observacoes='',
+    confirmar_margem_antiga=False,
+):
+    """Atualiza a Proposta e a envia ao Banco em uma única transação atômica."""
+    editar_proposta(
+        usuario=usuario,
+        proposta=proposta,
+        beneficio=beneficio,
+        banco=banco,
+        modalidade=modalidade,
+        valor=valor,
+        valor_liberado=valor_liberado,
+        prazo=prazo,
+        parcela=parcela,
+        taxa=taxa,
+        observacoes=observacoes,
+    )
+    enviar_proposta(
+        usuario=usuario,
+        proposta=proposta,
+        confirmar_margem_antiga=confirmar_margem_antiga,
+    )
+    return proposta
+
+
+@transaction.atomic
 def editar_observacoes(*, usuario, proposta, observacoes):
     """As observações podem ser editadas em qualquer etapa."""
     proposta.observacoes = observacoes

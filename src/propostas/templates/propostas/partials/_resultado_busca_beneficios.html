@@ -1,0 +1,52 @@
+{% if beneficios %}
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Benefício</th>
+          <th>Margem vigente</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in beneficios %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ b.cliente.nome }}</div>
+              <div class="text-body-secondary small">CPF {{ b.cliente.cpf_mascarado }}</div>
+            </td>
+            <td>
+              <div>{{ b.numero }}</div>
+              <div class="text-body-secondary small">{{ b.get_especie_display }}</div>
+            </td>
+            <td>
+              {% if b.margem_vigente %}
+                <div>{{ b.margem_vigente.valor|moeda }}</div>
+                <div class="text-body-secondary small">
+                  {{ b.margem_vigente.data_consulta|date:'d/m/Y' }}
+                  {% if b.margem_vigente.antiga %}
+                    <span class="badge text-bg-warning ms-1">Mais de 30 dias</span>
+                  {% endif %}
+                </div>
+              {% else %}
+                <span class="text-body-secondary small">Nenhuma Margem</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <button type="button"
+                      class="btn btn-sm btn-primary"
+                      hx-get="{% url 'propostas:card_beneficio' b.pk %}"
+                      hx-target="#beneficio-selecao"
+                      hx-swap="outerHTML">
+                Selecionar
+              </button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% elif busca %}
+  <p class="text-body-secondary mb-0 py-2">Nenhum Benefício ativo encontrado para a busca.</p>
+{% endif %}

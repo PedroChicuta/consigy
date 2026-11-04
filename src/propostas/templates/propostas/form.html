@@ -16,4 +16,25 @@
 {% endblock %}
 {% block titulo_formulario %}{% if proposta %}Editar Proposta {{ proposta.pk }}{% else %}Nova Proposta{% endif %}{% endblock %}
 {% block descricao_formulario %}<p class="text-body-secondary mb-0">Condições oferecidas pelo Banco.</p>{% endblock %}
+{% block antes_form %}
+  {% if beneficio %}
+    {% include 'propostas/partials/_card_beneficio.html' with beneficio=beneficio %}
+  {% else %}
+    {% include 'propostas/partials/_busca_beneficios.html' %}
+  {% endif %}
+  {% if pedir_confirmacao %}
+    <div class="alert alert-warning mb-3">
+      <div class="mb-2">
+        <strong>Atenção:</strong> {{ aviso_margem_antiga|default:'A Margem consignável consultada tem mais de 30 dias.' }}
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="confirmar_margem_antiga" value="1" id="id_confirmar_margem_antiga">
+        <label class="form-check-label" for="id_confirmar_margem_antiga">
+          Confirmar envio ao Banco com Margem com mais de 30 dias
+        </label>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
+{% block rotulo_enviar %}Salvar e Enviar ao Banco{% endblock %}
 {% block url_cancelar %}{% if proposta %}{% url 'propostas:detalhe' proposta.pk %}{% else %}{% url 'propostas:lista' %}{% endif %}{% endblock %}

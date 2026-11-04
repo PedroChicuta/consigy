@@ -31,6 +31,13 @@ class Beneficio(models.Model):
     def __str__(self):
         return self.numero
 
+    @property
+    def margem_vigente(self):
+        margens = getattr(self, '_prefetched_objects_cache', {}).get('margens')
+        if margens is not None:
+            return margens[0] if margens else None
+        return self.margens.first()
+
 
 class Margem(models.Model):
     """Margem consignável de um Benefício, digitada com a data da consulta."""
