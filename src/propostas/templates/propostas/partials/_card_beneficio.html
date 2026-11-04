@@ -1,0 +1,98 @@
+<div id="beneficio-selecao" class="card bg-body-tertiary mb-4 border">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+      <div>
+        <div class="text-uppercase text-body-secondary fw-semibold small mb-1">Benefício selecionado</div>
+        <div class="h5 mb-1">
+          <a href="{% url 'beneficios:detalhe' beneficio.pk %}" target="_blank" class="text-decoration-none">
+            {{ beneficio.numero }}
+          </a>
+          <span class="badge text-bg-light border text-body-secondary fw-normal fs-6 ms-1">{{ beneficio.get_especie_display }}</span>
+          {% if not beneficio.ativo %}
+            <span class="badge text-bg-secondary ms-1">Inativo</span>
+          {% endif %}
+        </div>
+        <div class="text-body-secondary small">
+          Cliente: <a href="{% url 'clientes:detalhe' beneficio.cliente.pk %}" target="_blank">{{ beneficio.cliente.nome }}</a>
+          <span class="ms-1">· CPF {{ beneficio.cliente.cpf_mascarado }}</span>
+        </div>
+      </div>
+      <div>
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary"
+                hx-get="{% url 'propostas:buscar_beneficios' %}?modo=busca"
+                hx-target="#beneficio-selecao"
+                hx-swap="outerHTML">
+          Trocar Benefício
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-3 pt-3 border-top">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+          <span class="fw-semibold">Margem consignável vigente:</span>
+          {% if beneficio.margem_vigente %}
+            <span class="fs-6 fw-bold ms-1">{{ beneficio.margem_vigente.valor|moeda }}</span>
+            <span class="text-body-secondary small ms-1">(consulta de {{ beneficio.margem_vigente.data_consulta|date:'d/m/Y' }})</span>
+            {% if beneficio.margem_vigente.antiga %}
+              <div class="alert alert-warning py-1 px-2 mt-2 mb-0 small">
+                Margem com mais de 30 dias: faça uma nova consulta.
+              </div>
+            {% endif %}
+          {% else %}
+            <div class="alert alert-warning py-1 px-2 mt-2 mb-0 small">
+              Nenhuma Margem registrada para este Benefício.
+            </div>
+          {% endif %}
+        </div>
+
+        {% if perms.beneficios.add_margem and beneficio.ativo %}
+          <button type="button"
+                  class="btn btn-sm btn-outline-primary"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#inline-margem-form-{{ beneficio.pk }}"
+                  aria-expanded="{% if erro_margem %}true{% else %}false{% endif %}"
+                  aria-controls="inline-margem-form-{{ beneficio.pk }}">
+            Nova consulta de Margem
+          </button>
+        {% endif %}
+      </div>
+
+      {% if perms.beneficios.add_margem and beneficio.ativo %}
+        <div class="collapse mt-3{% if erro_margem %} show{% endif %}" id="inline-margem-form-{{ beneficio.pk }}">
+          <div id="form-margem-inline-{{ beneficio.pk }}" class="p-3 border rounded bg-body">
+            <div class="fw-semibold small mb-2">Registrar nova consulta de Margem</div>
+            {% if erro_margem %}
+              <div class="alert alert-danger py-1 px-2 mb-2 small">{{ erro_margem }}</div>
+            {% endif %}
+            <div class="row g-2 align-items-end">
+              <div class="col-sm-5">
+                <label class="form-label small mb-1" for="id_margem_valor_{{ beneficio.pk }}">Valor da Margem (R$)</label>
+                <input type="number" step="0.01" min="0.01" name="valor" id="id_margem_valor_{{ beneficio.pk }}" class="form-control form-control-sm" required>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label small mb-1" for="id_margem_data_{{ beneficio.pk }}">Data da consulta</label>
+                <input type="date" name="data_consulta" id="id_margem_data_{{ beneficio.pk }}" value="{% now 'Y-m-d' %}" class="form-control form-control-sm" required>
+              </div>
+              <div class="col-sm-3 d-flex gap-2">
+                <button type="button"
+                        class="btn btn-sm btn-primary"
+                        hx-post="{% url 'propostas:registrar_margem_inline' beneficio.pk %}"
+                        hx-include="#form-margem-inline-{{ beneficio.pk }}"
+                        hx-target="#beneficio-selecao"
+                        hx-swap="outerHTML">
+                  Salvar
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#inline-margem-form-{{ beneficio.pk }}">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<input type="hidden" name="beneficio" value="{{ beneficio.pk }}" id="id_beneficio" hx-swap-oob="true">

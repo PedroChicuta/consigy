@@ -43,4 +43,21 @@ class BeneficioForm(forms.Form):
 
 class MargemForm(forms.Form):
     valor = forms.DecimalField(label='Valor da Margem (R$)', max_digits=10, decimal_places=2)
-    data_consulta = forms.DateField(label='Data da consulta', widget=DataInput(format='%Y-%m-%d'))
+    data_consulta = forms.DateField(
+        label='Data da consulta',
+        widget=DataInput(format='%Y-%m-%d'),
+        initial=datetime.date.today,
+    )
+
+    def clean_valor(self):
+        valor = self.cleaned_data.get('valor')
+        if valor is not None and valor <= Decimal('0'):
+            raise forms.ValidationError('A Margem deve ser maior que zero.')
+        return valor
+
+    def clean_data_consulta(self):
+        data = self.cleaned_data.get('data_consulta')
+        if data and data > datetime.date.today():
+            raise forms.ValidationError('A data da consulta não pode estar no futuro.')
+        return data
+

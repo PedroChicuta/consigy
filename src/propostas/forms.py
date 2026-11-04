@@ -7,14 +7,11 @@ from propostas import selectors
 from propostas.models import Modalidade
 
 
-class _BeneficioChoiceField(forms.ModelChoiceField):
-    def label_from_instance(self, obj):
-        return f'{obj.numero} · {obj.cliente.nome}'
-
-
 class PropostaForm(forms.Form):
-    beneficio = _BeneficioChoiceField(
-        queryset=Beneficio.objects.none(), label='Benefício', empty_label='Selecione o Benefício'
+    beneficio = forms.ModelChoiceField(
+        queryset=Beneficio.objects.none(),
+        widget=forms.HiddenInput(),
+        error_messages={'required': 'Selecione um Benefício.'},
     )
     banco = forms.ModelChoiceField(
         queryset=Banco.objects.none(), label='Banco', empty_label='Selecione o Banco'
@@ -37,10 +34,10 @@ class PropostaForm(forms.Form):
 
     def __init__(self, *args, proposta=None, **kwargs):
         super().__init__(*args, **kwargs)
-        filtro_beneficio, filtro_banco = Q(ativo=True), Q(ativo=True)
+        filtro_beneficio, filtro_banco = Q(ativo=True, cliente__ativo=True), Q(ativo=True)
         if proposta is not None:
             # Mantém a escolha atual, mesmo que tenha sido inativada depois da digitação.
-            filtro_beneficio |= Q(pk=proposta.beneficio_id)
+            filtro_beneficio = Q(ativo=True, cliente__ativo=True) | Q(pk=proposta.beneficio_id)
             filtro_banco |= Q(pk=proposta.banco_id)
             modalidades = Modalidade.objects.filter(Q(ativo=True) | Q(pk=proposta.modalidade_id))
         else:

@@ -16,4 +16,11 @@
 {% endblock %}
 {% block titulo_formulario %}{% if proposta %}Editar Proposta {{ proposta.pk }}{% else %}Nova Proposta{% endif %}{% endblock %}
 {% block descricao_formulario %}<p class="text-body-secondary mb-0">Condições oferecidas pelo Banco.</p>{% endblock %}
+{% block antes_form %}
+  {% if beneficio %}
+    {% include 'propostas/partials/_card_beneficio.html' with beneficio=beneficio %}
+  {% else %}
+    {% include 'propostas/partials/_busca_beneficios.html' %}
+  {% endif %}
+{% endblock %}
 {% block url_cancelar %}{% if proposta %}{% url 'propostas:detalhe' proposta.pk %}{% else %}{% url 'propostas:lista' %}{% endif %}{% endblock %}

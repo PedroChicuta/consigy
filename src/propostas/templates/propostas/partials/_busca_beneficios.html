@@ -1,0 +1,18 @@
+<div id="beneficio-selecao" class="mb-4 p-3 border rounded bg-body-tertiary">
+  <label class="form-label fw-semibold mb-1" for="busca-beneficio-input">Benefício</label>
+  <div class="input-group">
+    <input type="search"
+           id="busca-beneficio-input"
+           name="q"
+           class="form-control"
+           placeholder="Buscar Benefício por CPF, nome do Cliente ou número do Benefício..."
+           hx-get="{% url 'propostas:buscar_beneficios' %}"
+           hx-trigger="input changed delay:300ms, search"
+           hx-target="#resultado-busca-beneficios"
+           hx-swap="innerHTML"
+           autocomplete="off">
+  </div>
+  <div class="form-text">Digite CPF, nome do Cliente ou número do Benefício para buscar Benefícios ativos.</div>
+  <div id="resultado-busca-beneficios" class="mt-2"></div>
+</div>
+<input type="hidden" name="beneficio" value="" id="id_beneficio" hx-swap-oob="true">

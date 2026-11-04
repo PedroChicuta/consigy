@@ -44,7 +44,17 @@
     <dt class="col-sm-3">Cliente</dt>
     <dd class="col-sm-9"><a href="{% url 'clientes:detalhe' proposta.beneficio.cliente.pk %}">{{ proposta.beneficio.cliente.nome }}</a></dd>
     <dt class="col-sm-3">Benefício</dt>
-    <dd class="col-sm-9"><a href="{% url 'beneficios:detalhe' proposta.beneficio.pk %}">{{ proposta.beneficio.numero }}</a></dd>
+    <dd class="col-sm-9">
+      <a href="{% url 'beneficios:detalhe' proposta.beneficio.pk %}">{{ proposta.beneficio.numero }}</a>
+      <span class="text-body-secondary ms-1">({{ proposta.beneficio.get_especie_display }})</span>
+      {% if not proposta.beneficio.ativo %}<span class="badge text-bg-secondary ms-1">Inativo</span>{% endif %}
+    </dd>
+    {% if proposta.status == 'digitada' %}
+      <dt class="col-sm-3">Margem vigente</dt>
+      <dd class="col-sm-9">
+        {% include 'propostas/partials/_margem_detalhe.html' with beneficio=proposta.beneficio %}
+      </dd>
+    {% endif %}
     <dt class="col-sm-3">Banco</dt><dd class="col-sm-9">{{ proposta.banco.nome }}</dd>
     <dt class="col-sm-3">Modalidade</dt><dd class="col-sm-9">{{ proposta.modalidade.nome }}</dd>
     <dt class="col-sm-3">Valor</dt><dd class="col-sm-9">{{ proposta.valor|moeda }}</dd>

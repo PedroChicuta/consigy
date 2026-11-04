@@ -15,7 +15,11 @@
     <form method="post" novalidate class="card shadow-sm">
       {% csrf_token %}
       {% if url_retorno %}<input type="hidden" name="next" value="{{ url_retorno }}">{% endif %}
-      <div class="card-body p-4">{{ form }}</div>
+      <div class="card-body p-4">
+        {% block antes_form %}{% endblock %}
+        {{ form }}
+        {% block depois_form %}{% endblock %}
+      </div>
       <div class="card-footer formulario-acoes">
         <a class="btn btn-link link-body-emphasis text-decoration-none" href="{% if url_retorno %}{{ url_retorno }}{% else %}{% block url_cancelar %}{{ url_cancelar }}{% endblock %}{% endif %}">Cancelar</a>
         {% block acoes_extras %}
